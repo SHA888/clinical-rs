@@ -1,0 +1,36 @@
+name: MSRV Check
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # Run weekly on Monday at 3 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  msrv:
+    name: Check MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (MSRV)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: .
+
+      - name: Check workspace compiles with MSRV
+        run: cargo check --workspace
+
+      - name: Verify all crates compile with MSRV
+        run: |
+          cargo check -p medcodes
+          cargo check -p mimic-etl
+          cargo check -p clinical-tasks

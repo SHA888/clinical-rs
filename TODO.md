@@ -251,43 +251,43 @@ Each crate gets a publishable-but-empty skeleton.
 
 ### 0.0.5 — CI / CD Pipeline (GitHub Actions)
 
-- [ ] **`.github/workflows/ci.yml`** — runs on every push and PR
-  - [ ] Matrix: `ubuntu-latest` (primary), `macos-latest`, `windows-latest`
-  - [ ] Steps:
+- [x] **`.github/workflows/ci.yml`** — runs on every push and PR
+  - [x] Matrix: `ubuntu-latest` (primary), `macos-latest`, `windows-latest`
+  - [x] Steps:
     1. `rustup` install with `rust-toolchain.toml`
     2. `cargo fmt --all -- --check`
     3. `cargo clippy --workspace --all-targets -- -D warnings`
     4. `cargo nextest run --workspace` (with `cargo-nextest`)
     5. `cargo doc --workspace --no-deps` (verify docs build)
     6. `cargo deny check`
-  - [ ] Rust cache via `Swatinem/rust-cache@v2`
-  - [ ] Fail-fast: `false` (report all platform failures, not just first)
-- [ ] **`.github/workflows/release.yml`** — runs on `v*` tag push
-  - [ ] Determine which crate(s) changed
-  - [ ] `cargo publish -p <crate>` with `CARGO_REGISTRY_TOKEN` secret
-  - [ ] Create GitHub Release with changelog from `git-cliff`
-- [ ] **`.github/workflows/audit.yml`** — scheduled nightly
-  - [ ] `cargo audit` against RustSec advisory DB
-  - [ ] Opens issue on vulnerability found
-- [ ] **`.github/workflows/msrv.yml`** — weekly
-  - [ ] Install MSRV toolchain (1.94.0)
-  - [ ] `cargo check --workspace` to verify MSRV holds
+  - [x] Rust cache via `Swatinem/rust-cache@v2`
+  - [x] Fail-fast: `false` (report all platform failures, not just first)
+- [x] **`.github/workflows/release.yml`** — runs on `v*` tag push
+  - [x] Determine which crate(s) changed
+  - [x] `cargo publish -p <crate>` with `CARGO_REGISTRY_TOKEN` secret
+  - [x] Create GitHub Release with changelog from `git-cliff`
+- [x] **`.github/workflows/audit.yml`** — scheduled nightly
+  - [x] `cargo audit` against RustSec advisory DB
+  - [x] Opens issue on vulnerability found
+- [x] **`.github/workflows/msrv.yml`** — weekly
+  - [x] Install MSRV toolchain (1.94.0)
+  - [x] `cargo check --workspace` to verify MSRV holds
 - [ ] **Branch protection rules** (manual, in GitHub settings)
   - [ ] `main` branch: require PR, require CI pass, require 1 approval (when collaborators exist)
   - [ ] No force push to `main`
 
 ### 0.0.6 — Repository Files
 
-- [ ] **`LICENSE-MIT`** — MIT license text with `Kresna Sucandra` and current year
-- [ ] **`LICENSE-APACHE`** — Apache 2.0 full text
-- [ ] **`CONTRIBUTING.md`**
-  - [ ] Development setup instructions (clone, `rustup`, tool installs)
-  - [ ] Commit message format (Conventional Commits)
-  - [ ] PR process: fork → branch → PR → CI pass → review → merge
+- [x] **`LICENSE-MIT`** — MIT license text with `Kresna Sucandra` and current year
+- [x] **`LICENSE-APACHE`** — Apache 2.0 full text
+- [x] **`CONTRIBUTING.md`**
+  - [x] Development setup instructions (clone, `rustup`, tool installs)
+  - [x] Commit message format (Conventional Commits)
+  - [x] PR process: fork → branch → PR → CI pass → review → merge
   - [ ] How to add a new code system to `medcodes`
   - [ ] How to add a new dataset parser
   - [ ] How to add a new task to `clinical-tasks`
-  - [ ] Code style: follow `rustfmt.toml`, satisfy clippy pedantic
+  - [x] Code style: follow `rustfmt.toml`, satisfy clippy pedantic
 - [ ] **`SECURITY.md`**
   - [ ] Responsible disclosure policy
   - [ ] Contact: email or GitHub security advisory
