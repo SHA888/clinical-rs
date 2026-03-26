@@ -40,7 +40,7 @@ jobs:
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install git-cliff
-        run: cargo install git-cliff@2.12 --locked
+        run: cargo install git-cliff@^2.12 --locked
 
       - name: Generate changelog
         run: |
