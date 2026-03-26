@@ -288,16 +288,16 @@ Each crate gets a publishable-but-empty skeleton.
   - [ ] How to add a new dataset parser
   - [ ] How to add a new task to `clinical-tasks`
   - [x] Code style: follow `rustfmt.toml`, satisfy clippy pedantic
-- [ ] **`SECURITY.md`**
-  - [ ] Responsible disclosure policy
-  - [ ] Contact: email or GitHub security advisory
-  - [ ] Scope: clinical data correctness bugs are treated as security-severity
-- [ ] **`CODE_OF_CONDUCT.md`** — Contributor Covenant v2.1
-- [ ] **`.github/ISSUE_TEMPLATE/`**
-  - [ ] `bug_report.md` — steps to reproduce, expected vs actual, crate + version
-  - [ ] `feature_request.md` — use case, proposed API, which crate
-- [ ] **`.github/PULL_REQUEST_TEMPLATE.md`**
-  - [ ] Checklist: tests added, docs updated, CHANGELOG entry, `cargo fmt`, `cargo clippy`
+- [x] **`SECURITY.md`**
+  - [x] Responsible disclosure policy
+  - [x] Contact: email or GitHub security advisory
+  - [x] Scope: clinical data correctness bugs are treated as security-severity
+- [x] **`CODE_OF_CONDUCT.md`** — Contributor Covenant v2.1
+- [x] **`.github/ISSUE_TEMPLATE/`**
+  - [x] `bug_report.md` — steps to reproduce, expected vs actual, crate + version
+  - [x] `feature_request.md` — use case, proposed API, which crate
+- [x] **`.github/PULL_REQUEST_TEMPLATE.md`**
+  - [x] Checklist: tests added, docs updated, CHANGELOG entry, `cargo fmt`, `cargo clippy`
 - [ ] **`.github/FUNDING.yml`** (optional, if sponsorship desired)
 
 ### 0.0.7 — Release Infrastructure
