@@ -1,6 +1,6 @@
 [package]
 name = "mimic-etl"
-version = "0.0.0"
+version = "0.0.1"
 description = "MIMIC-III/IV clinical database ETL — CSV to Apache Arrow"
 edition.workspace = true
 rust-version.workspace = true
