@@ -52,15 +52,23 @@ jobs:
 
       - name: Publish medcodes
         if: contains(github.ref, 'refs/tags/')
-        run: cargo publish -p medcodes --dry-run
+        run: cargo publish -p medcodes
+
+      - name: Wait for medcodes to be available
+        if: contains(github.ref, 'refs/tags/')
+        run: sleep 30
 
       - name: Publish mimic-etl
         if: contains(github.ref, 'refs/tags/')
-        run: cargo publish -p mimic-etl --dry-run
+        run: cargo publish -p mimic-etl
+
+      - name: Wait for mimic-etl to be available
+        if: contains(github.ref, 'refs/tags/')
+        run: sleep 30
 
       - name: Publish clinical-tasks
         if: contains(github.ref, 'refs/tags/')
-        run: cargo publish -p clinical-tasks --dry-run
+        run: cargo publish -p clinical-tasks
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
