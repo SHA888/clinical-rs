@@ -28,15 +28,42 @@ The following tools are required for development:
 - `cargo-machete` — detect unused dependencies
 - `cargo-udeps` (nightly only, optional) — detect unused deps at compile time
 
-Install with:
+### Pre-commit Hooks
+
+This project uses pre-commit hooks to ensure code quality and consistency.
+
+#### Quick Setup
 ```bash
-cargo install cargo-nextest@0.9 --locked
-cargo install cargo-deny@0.19 --locked
-cargo install cargo-release@1.1 --locked
-cargo install cargo-audit@0.22 --locked
-cargo install git-cliff@2.12 --locked
-cargo install cargo-machete --locked
+./scripts/setup-dev.sh
 ```
+
+#### Manual Setup
+```bash
+# Install pre-commit (if not already installed)
+pip install pre-commit
+
+# Install hooks
+pre-commit install
+```
+
+#### Available Hooks
+- **rustfmt**: Auto-formats Rust code
+- **clippy**: Runs linter with strict warnings
+- **cargo-test**: Runs tests with cargo-nextest
+- **cargo-audit**: Security vulnerability checking
+- **cargo-deny**: License and security compliance
+- **commit-msg**: Enforces conventional commit format
+
+#### Usage
+```bash
+# Run all hooks on all files
+pre-commit run --all-files
+
+# Run hooks on staged files (automatic on commit)
+git commit -m "feat: add new feature"
+```
+
+See [docs/pre-commit-hooks.md](docs/pre-commit-hooks.md) for detailed information.
 
 ### Conventional Commits
 
