@@ -1,6 +1,6 @@
 [package]
 name = "medcodes"
-version = "0.0.2-rc.1"
+version = "0.0.2-rc.2"
 description = "Medical code ontologies, hierarchy traversal, and cross-system mapping"
 edition.workspace = true
 rust-version.workspace = true
