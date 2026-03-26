@@ -1,6 +1,6 @@
 [package]
 name = "clinical-tasks"
-version = "0.0.1"
+version = "0.0.2-rc.1"
 description = "Clinical prediction task windowing — Arrow event streams to ML-ready datasets"
 edition.workspace = true
 rust-version.workspace = true
@@ -15,7 +15,7 @@ readme = "README.md"
 arrow = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }
-medcodes = { version = "0.0.1", path = "../medcodes", optional = true }
+medcodes = { version = "0.0.2-rc.1", path = "../medcodes", optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
