@@ -14,7 +14,7 @@ This is the initial release of the clinical-rs workspace, containing three found
 - Efficient lookup using compile-time hash maps (planned)
 - Feature flags for optional serde support
 
-### 📊 mimic-etl v0.0.1  
+### 📊 mimic-etl v0.0.1
 **MIMIC-III/IV clinical database ETL — CSV to Apache Arrow**
 
 - CSV reader module for MIMIC datasets (stub implementation)
@@ -46,7 +46,7 @@ This is the initial release of the clinical-rs workspace, containing three found
 All crates are configured and ready for publishing to crates.io:
 
 1. **medcodes** - No external dependencies, ready to publish first
-2. **mimic-etl** - Depends on medcodes, publishes second  
+2. **mimic-etl** - Depends on medcodes, publishes second
 3. **clinical-tasks** - Depends on medcodes, publishes third
 
 The GitHub Actions release workflow will automatically:
