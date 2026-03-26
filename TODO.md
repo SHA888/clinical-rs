@@ -302,36 +302,26 @@ Each crate gets a publishable-but-empty skeleton.
 
 ### 0.0.7 — Release Infrastructure
 
-- [ ] **`cliff.toml`** (git-cliff config)
-  - [ ] Conventional Commits parsing
-  - [ ] Group by: feat, fix, docs, refactor, perf, test, ci, chore
-  - [ ] Per-crate changelog generation (filter commits by path `crates/<name>`)
-  - [ ] Template: Keep a Changelog format
-- [ ] **`release.toml`** (cargo-release config)
-  ```toml
-  [workspace]
-  pre-release-commit-message = "chore: release {{crate_name}} v{{version}}"
-  tag-message = "{{crate_name}} v{{version}}"
-  tag-prefix = "{{crate_name}}-v"
-  tag-name = "{{crate_name}}-v{{version}}"
-  pre-release-replacements = [
-    { file = "CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [Unreleased]\n\n## [{{version}}] - {{date}}" },
-  ]
-  ```
-  - [ ] Per-crate tags: `medcodes-v0.1.0`, `mimic-etl-v0.1.0`, `clinical-tasks-v0.1.0`
-  - [ ] Pre-release hook: `cargo deny check && cargo nextest run --workspace`
-- [ ] **Dry-run test:** `cargo release patch --workspace --dry-run` completes without error
+- [x] **`cliff.toml`** (git-cliff config)
+  - [x] Conventional Commits parsing
+  - [x] Group by: feat, fix, docs, refactor, perf, test, ci, chore
+  - [x] Per-crate changelog generation (filter commits by path `crates/<name>`)
+  - [x] Template: Keep a Changelog format
+- [x] **`release.toml`** (cargo-release config)
+  - [x] Per-crate tags: `medcodes-v0.1.0`, `mimic-etl-v0.1.0`, `clinical-tasks-v0.1.0`
+  - [x] Pre-release hook: `cargo deny check && cargo nextest run --workspace`
+- [x] **Dry-run test:** `cargo release patch --workspace --dry-run` completes without error
 
 ### 0.0.8 — Verification Checkpoint
 
 All of the following must pass on a fresh `git clone`:
 
-- [ ] `cargo check --workspace` — compiles
-- [ ] `cargo fmt --all -- --check` — formatted
-- [ ] `cargo clippy --workspace --all-targets -- -D warnings` — no warnings
-- [ ] `cargo nextest run --workspace` — tests pass (trivially, since no tests yet)
-- [ ] `cargo doc --workspace --no-deps` — docs build
-- [ ] `cargo deny check` — license + advisory clean
+- [x] `cargo check --workspace` — compiles
+- [x] `cargo fmt --all -- --check` — formatted
+- [x] `cargo clippy --workspace --all-targets -- -D warnings` — no warnings
+- [x] `cargo nextest run --workspace` — tests pass (trivially, since no tests yet)
+- [x] `cargo doc --workspace --no-deps` — docs build
+- [x] `cargo deny check` — license + advisory clean
 - [ ] `cargo release patch --workspace --dry-run` — release flow works
 - [ ] GitHub Actions CI is green on `main`
 - [ ] README renders correctly on GitHub
