@@ -56,7 +56,11 @@ jobs:
 
       - name: Publish medcodes
         if: contains(github.ref, 'refs/tags/')
-        run: cargo publish -p medcodes
+        run: |
+          cargo publish -p medcodes || {
+            echo "medcodes publish failed, will retry with bumped version"
+            exit 1
+          }
 
       - name: Wait for medcodes to be available
         if: contains(github.ref, 'refs/tags/')
@@ -64,7 +68,11 @@ jobs:
 
       - name: Publish mimic-etl
         if: contains(github.ref, 'refs/tags/')
-        run: cargo publish -p mimic-etl
+        run: |
+          cargo publish -p mimic-etl || {
+            echo "mimic-etl publish failed, will retry with bumped version"
+            exit 1
+          }
 
       - name: Wait for mimic-etl to be available
         if: contains(github.ref, 'refs/tags/')
@@ -72,7 +80,11 @@ jobs:
 
       - name: Publish clinical-tasks
         if: contains(github.ref, 'refs/tags/')
-        run: cargo publish -p clinical-tasks
+        run: |
+          cargo publish -p clinical-tasks || {
+            echo "clinical-tasks publish failed, will retry with bumped version"
+            exit 1
+          }
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
