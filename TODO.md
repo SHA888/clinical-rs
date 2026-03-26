@@ -1,6 +1,6 @@
 # Roadmap
 
-Comprehensive checklist organized by crate and [SemVer](https://semver.org/) release milestone. Each item is a concrete deliverable.
+Comprehensive checklist organized by phase and [SemVer](https://semver.org/) release milestone. Each item is a concrete deliverable.
 
 > **Versioning policy:** All three crates version independently. A breaking change in `medcodes` does not force a major bump in `mimic-etl`. Pre-1.0 releases (0.x.y) may contain breaking changes in minor versions per SemVer §4.
 
@@ -8,11 +8,336 @@ Comprehensive checklist organized by crate and [SemVer](https://semver.org/) rel
 
 ## Table of Contents
 
+- [Phase 0 — Project Bootstrap](#phase-0--project-bootstrap)
 - [medcodes](#medcodes)
 - [mimic-etl](#mimic-etl)
 - [clinical-tasks](#clinical-tasks)
-- [Workspace / Infrastructure](#workspace--infrastructure)
 - [Future Crates (Post-1.0)](#future-crates-post-10)
+
+---
+
+## Phase 0 — Project Bootstrap
+
+Everything needed before writing the first line of library code. This phase produces a fully configured, CI-protected, release-ready Cargo workspace with zero library functionality.
+
+### 0.1 — Toolchain & Environment
+
+- [ ] **Rust toolchain**
+  - [ ] `rust-toolchain.toml` pinning `channel = "1.94.0"` (current stable, 2024 edition)
+  - [ ] Components: `rustfmt`, `clippy`, `rust-src`, `rust-analyzer`
+  - [ ] Verify: `rustup show` matches on fresh clone
+- [ ] **Dev tools (documented in `CONTRIBUTING.md`)**
+  - [ ] `cargo-nextest` 0.9.x — test runner (parallel, better output than `cargo test`)
+  - [ ] `cargo-deny` 0.19.x — license audit, advisory DB, dependency policy
+  - [ ] `cargo-release` 1.1.x — workspace-aware semver release flow
+  - [ ] `cargo-audit` 0.22.x — security advisory checking
+  - [ ] `git-cliff` 2.12.x — conventional-commit changelog generation
+  - [ ] `cargo-machete` — detect unused dependencies
+  - [ ] `cargo-udeps` (nightly only, optional) — detect unused deps at compile time
+- [ ] **Git configuration**
+  - [ ] `.gitignore`: `target/`, `data/`, `*.parquet`, `*.arrow`, `*.ipc`, `.env`, `*.csv.gz`
+  - [ ] `.gitattributes`: `*.rs diff=rust`, LF line endings enforced
+  - [ ] Conventional Commits enforced in `CONTRIBUTING.md` (feat/fix/docs/chore/refactor/test/ci)
+
+### 0.2 — Workspace Manifest
+
+- [ ] **Root `Cargo.toml`**
+  ```toml
+  [workspace]
+  resolver = "2"
+  members = ["crates/*"]
+
+  [workspace.package]
+  edition = "2024"
+  rust-version = "1.94.0"
+  license = "MIT OR Apache-2.0"
+  repository = "https://github.com/SHA888/clinical-rs"
+  homepage = "https://github.com/SHA888/clinical-rs"
+  authors = ["Kresna Sucandra"]
+  categories = ["science", "data-structures"]
+  keywords = ["clinical", "healthcare", "arrow", "medical", "ehr"]
+
+  [workspace.dependencies]
+  # Core
+  arrow = "58.1"
+  parquet = "58.1"
+  chrono = { version = "0.4.44", default-features = false, features = ["std", "clock"] }
+  serde = { version = "1.0.228", features = ["derive"] }
+  thiserror = "2.0.18"
+
+  # ETL
+  csv = "1.4"
+  rayon = "1.11"
+  memmap2 = "0.9.10"
+
+  # Code tables
+  phf = { version = "0.13.1", features = ["macros"] }
+
+  # Dev / test
+  criterion = { version = "0.8.2", features = ["html_reports"] }
+  proptest = "1"
+  tempfile = "3"
+  insta = "1"          # snapshot testing
+  ```
+- [ ] Verify: `cargo check --workspace` passes with empty `lib.rs` stubs
+- [ ] Verify: `cargo fmt --all -- --check` passes
+- [ ] Verify: `cargo clippy --workspace -- -D warnings` passes
+
+### 0.3 — Crate Scaffolding (Empty Shells)
+
+Each crate gets a publishable-but-empty skeleton.
+
+- [ ] **`crates/medcodes/Cargo.toml`**
+  ```toml
+  [package]
+  name = "medcodes"
+  version = "0.0.0"                         # 0.0.0 = unpublished placeholder
+  description = "Medical code ontologies, hierarchy traversal, and cross-system mapping"
+  edition.workspace = true
+  rust-version.workspace = true
+  license.workspace = true
+  repository.workspace = true
+  authors.workspace = true
+  categories = ["science", "data-structures"]
+  keywords = ["icd10", "medical-codes", "snomed", "loinc", "healthcare"]
+  readme = "README.md"
+
+  [dependencies]
+  thiserror = { workspace = true }
+  phf = { workspace = true }
+  serde = { workspace = true, optional = true }
+
+  [dev-dependencies]
+  criterion = { workspace = true }
+  proptest = { workspace = true }
+
+  [features]
+  default = ["icd10cm"]
+  icd10cm = []
+  serde = ["dep:serde"]
+
+  [[bench]]
+  name = "lookup"
+  harness = false
+  ```
+  - [ ] `crates/medcodes/src/lib.rs` — module stubs, `#![doc]` header, public re-exports
+  - [ ] `crates/medcodes/README.md` — crate-level README (rendered on crates.io)
+  - [ ] `crates/medcodes/CHANGELOG.md` — initialized with `## [Unreleased]`
+- [ ] **`crates/mimic-etl/Cargo.toml`**
+  ```toml
+  [package]
+  name = "mimic-etl"
+  version = "0.0.0"
+  description = "MIMIC-III/IV clinical database ETL — CSV to Apache Arrow"
+  edition.workspace = true
+  rust-version.workspace = true
+  license.workspace = true
+  repository.workspace = true
+  authors.workspace = true
+  categories = ["science", "parser-implementations"]
+  keywords = ["mimic", "clinical", "arrow", "ehr", "healthcare"]
+  readme = "README.md"
+
+  [dependencies]
+  arrow = { workspace = true }
+  parquet = { workspace = true }
+  csv = { workspace = true }
+  rayon = { workspace = true }
+  memmap2 = { workspace = true }
+  chrono = { workspace = true }
+  thiserror = { workspace = true }
+  medcodes = { path = "../medcodes", optional = true }
+
+  [dev-dependencies]
+  criterion = { workspace = true }
+  tempfile = { workspace = true }
+
+  [features]
+  default = []
+  medcodes = ["dep:medcodes"]
+  cli = ["dep:clap"]          # future: CLI binary
+
+  [[bench]]
+  name = "parse"
+  harness = false
+  ```
+  - [ ] `crates/mimic-etl/src/lib.rs` — module stubs
+  - [ ] `crates/mimic-etl/README.md`
+  - [ ] `crates/mimic-etl/CHANGELOG.md`
+- [ ] **`crates/clinical-tasks/Cargo.toml`**
+  ```toml
+  [package]
+  name = "clinical-tasks"
+  version = "0.0.0"
+  description = "Clinical prediction task windowing — Arrow event streams to ML-ready datasets"
+  edition.workspace = true
+  rust-version.workspace = true
+  license.workspace = true
+  repository.workspace = true
+  authors.workspace = true
+  categories = ["science", "data-structures"]
+  keywords = ["clinical", "machine-learning", "arrow", "mortality", "healthcare"]
+  readme = "README.md"
+
+  [dependencies]
+  arrow = { workspace = true }
+  chrono = { workspace = true }
+  thiserror = { workspace = true }
+  medcodes = { path = "../medcodes", optional = true }
+
+  [dev-dependencies]
+  criterion = { workspace = true }
+  tempfile = { workspace = true }
+
+  [features]
+  default = []
+  medcodes = ["dep:medcodes"]
+
+  [[bench]]
+  name = "windowing"
+  harness = false
+  ```
+  - [ ] `crates/clinical-tasks/src/lib.rs` — module stubs
+  - [ ] `crates/clinical-tasks/README.md`
+  - [ ] `crates/clinical-tasks/CHANGELOG.md`
+- [ ] **Final check:** `cargo check --workspace` compiles all three empty crates
+
+### 0.4 — Code Quality Configuration
+
+- [ ] **`rustfmt.toml`**
+  ```toml
+  edition = "2024"
+  max_width = 100
+  use_field_init_shorthand = true
+  use_try_shorthand = true
+  ```
+- [ ] **Workspace-level clippy lints** (in root `Cargo.toml`)
+  ```toml
+  [workspace.lints.rust]
+  unsafe_code = "forbid"
+  missing_docs = "warn"
+  unused_results = "warn"
+
+  [workspace.lints.clippy]
+  all = { level = "warn", priority = -1 }
+  pedantic = { level = "warn", priority = -1 }
+  nursery = { level = "warn", priority = -1 }
+  unwrap_used = "warn"
+  expect_used = "warn"
+  panic = "warn"
+  ```
+  Each crate inherits via `[lints] workspace = true` in its `Cargo.toml`.
+- [ ] **`deny.toml`** (cargo-deny config)
+  ```toml
+  [advisories]
+  vulnerability = "deny"
+  unmaintained = "warn"
+  yanked = "warn"
+
+  [licenses]
+  allow = ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unicode-3.0", "Zlib"]
+  confidence-threshold = 0.8
+
+  [bans]
+  multiple-versions = "warn"
+  wildcards = "deny"
+
+  [sources]
+  unknown-registry = "deny"
+  unknown-git = "deny"
+  allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+  ```
+- [ ] **Verify:** `cargo deny check` passes on empty workspace
+
+### 0.5 — CI / CD Pipeline (GitHub Actions)
+
+- [ ] **`.github/workflows/ci.yml`** — runs on every push and PR
+  - [ ] Matrix: `ubuntu-latest` (primary), `macos-latest`, `windows-latest`
+  - [ ] Steps:
+    1. `rustup` install with `rust-toolchain.toml`
+    2. `cargo fmt --all -- --check`
+    3. `cargo clippy --workspace --all-targets -- -D warnings`
+    4. `cargo nextest run --workspace` (with `cargo-nextest`)
+    5. `cargo doc --workspace --no-deps` (verify docs build)
+    6. `cargo deny check`
+  - [ ] Rust cache via `Swatinem/rust-cache@v2`
+  - [ ] Fail-fast: `false` (report all platform failures, not just first)
+- [ ] **`.github/workflows/release.yml`** — runs on `v*` tag push
+  - [ ] Determine which crate(s) changed
+  - [ ] `cargo publish -p <crate>` with `CARGO_REGISTRY_TOKEN` secret
+  - [ ] Create GitHub Release with changelog from `git-cliff`
+- [ ] **`.github/workflows/audit.yml`** — scheduled nightly
+  - [ ] `cargo audit` against RustSec advisory DB
+  - [ ] Opens issue on vulnerability found
+- [ ] **`.github/workflows/msrv.yml`** — weekly
+  - [ ] Install MSRV toolchain (1.94.0)
+  - [ ] `cargo check --workspace` to verify MSRV holds
+- [ ] **Branch protection rules** (manual, in GitHub settings)
+  - [ ] `main` branch: require PR, require CI pass, require 1 approval (when collaborators exist)
+  - [ ] No force push to `main`
+
+### 0.6 — Repository Files
+
+- [ ] **`LICENSE-MIT`** — MIT license text with `Kresna Sucandra` and current year
+- [ ] **`LICENSE-APACHE`** — Apache 2.0 full text
+- [ ] **`CONTRIBUTING.md`**
+  - [ ] Development setup instructions (clone, `rustup`, tool installs)
+  - [ ] Commit message format (Conventional Commits)
+  - [ ] PR process: fork → branch → PR → CI pass → review → merge
+  - [ ] How to add a new code system to `medcodes`
+  - [ ] How to add a new dataset parser
+  - [ ] How to add a new task to `clinical-tasks`
+  - [ ] Code style: follow `rustfmt.toml`, satisfy clippy pedantic
+- [ ] **`SECURITY.md`**
+  - [ ] Responsible disclosure policy
+  - [ ] Contact: email or GitHub security advisory
+  - [ ] Scope: clinical data correctness bugs are treated as security-severity
+- [ ] **`CODE_OF_CONDUCT.md`** — Contributor Covenant v2.1
+- [ ] **`.github/ISSUE_TEMPLATE/`**
+  - [ ] `bug_report.md` — steps to reproduce, expected vs actual, crate + version
+  - [ ] `feature_request.md` — use case, proposed API, which crate
+- [ ] **`.github/PULL_REQUEST_TEMPLATE.md`**
+  - [ ] Checklist: tests added, docs updated, CHANGELOG entry, `cargo fmt`, `cargo clippy`
+- [ ] **`.github/FUNDING.yml`** (optional, if sponsorship desired)
+
+### 0.7 — Release Infrastructure
+
+- [ ] **`cliff.toml`** (git-cliff config)
+  - [ ] Conventional Commits parsing
+  - [ ] Group by: feat, fix, docs, refactor, perf, test, ci, chore
+  - [ ] Per-crate changelog generation (filter commits by path `crates/<name>`)
+  - [ ] Template: Keep a Changelog format
+- [ ] **`release.toml`** (cargo-release config)
+  ```toml
+  [workspace]
+  pre-release-commit-message = "chore: release {{crate_name}} v{{version}}"
+  tag-message = "{{crate_name}} v{{version}}"
+  tag-prefix = "{{crate_name}}-v"
+  tag-name = "{{crate_name}}-v{{version}}"
+  pre-release-replacements = [
+    { file = "CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [Unreleased]\n\n## [{{version}}] - {{date}}" },
+  ]
+  ```
+  - [ ] Per-crate tags: `medcodes-v0.1.0`, `mimic-etl-v0.1.0`, `clinical-tasks-v0.1.0`
+  - [ ] Pre-release hook: `cargo deny check && cargo nextest run --workspace`
+- [ ] **Dry-run test:** `cargo release patch --workspace --dry-run` completes without error
+
+### 0.8 — Verification Checkpoint
+
+All of the following must pass on a fresh `git clone`:
+
+- [ ] `cargo check --workspace` — compiles
+- [ ] `cargo fmt --all -- --check` — formatted
+- [ ] `cargo clippy --workspace --all-targets -- -D warnings` — no warnings
+- [ ] `cargo nextest run --workspace` — tests pass (trivially, since no tests yet)
+- [ ] `cargo doc --workspace --no-deps` — docs build
+- [ ] `cargo deny check` — license + advisory clean
+- [ ] `cargo release patch --workspace --dry-run` — release flow works
+- [ ] GitHub Actions CI is green on `main`
+- [ ] README renders correctly on GitHub
+- [ ] ARCHITECTURE.md and TODO.md are linked and accessible
+
+**Phase 0 is complete when a contributor can clone, build, test, lint, and dry-run a release with zero manual setup beyond `rustup` and tool installs.**
 
 ---
 
@@ -20,12 +345,8 @@ Comprehensive checklist organized by crate and [SemVer](https://semver.org/) rel
 
 ### v0.1.0 — Foundation
 
-Core ontology engine with ICD-10-CM and the first cross-mapping. Minimum viable crate for crates.io publish.
+Core ontology engine with ICD-10-CM and the first cross-mapping. First crate published to crates.io.
 
-- [ ] **Project scaffolding**
-  - [ ] `Cargo.toml` with metadata (description, license, repository, keywords, categories)
-  - [ ] `lib.rs` with public module structure
-  - [ ] CI: `cargo test`, `cargo clippy`, `cargo fmt --check`
 - [ ] **Core types**
   - [ ] `System` enum (ICD9CM, ICD10CM, ICD10PCS, ATC, NDC, LOINC, SNOMED, RxNorm, CCS, CCSR, CPT)
   - [ ] `Code` struct (system, code, description)
@@ -47,11 +368,16 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. Minimum viable 
 - [ ] **Tests**
   - [ ] Unit tests for every public method
   - [ ] Known-answer tests against CMS reference data (≥50 code lookups verified)
-  - [ ] Property tests: `normalize(code)` is idempotent, `is_valid(normalize(code))` holds
+  - [ ] Property tests (`proptest`): `normalize()` idempotent, `is_valid(normalize(x))` holds
+  - [ ] Snapshot tests (`insta`): hierarchy traversal output for known codes
 - [ ] **Documentation**
-  - [ ] Rustdoc for all public types and methods
-  - [ ] `README.md` with usage examples
-  - [ ] `CHANGELOG.md` initialized
+  - [ ] Rustdoc for all public types and methods with examples
+  - [ ] Crate-level `README.md` with usage examples
+  - [ ] `CHANGELOG.md` entry
+- [ ] **Release**
+  - [ ] Version bump: `0.0.0` → `0.1.0`
+  - [ ] `cargo release patch --execute -p medcodes`
+  - [ ] Verify crates.io page renders correctly
 
 ### v0.2.0 — Code System Expansion
 
@@ -66,10 +392,11 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. Minimum viable 
 - [ ] **NDC** (FDA National Drug Code Directory)
   - [ ] Labeler-product-package structure
   - [ ] Feature flag: `ndc`
-- [ ] **ICD-10-CM → CCS (single-level) mapping**
-- [ ] **ICD-9-CM → CCS mapping**
-- [ ] **NDC → ATC cross-mapping**
-- [ ] **NDC → RxNorm cross-mapping**
+- [ ] **Cross-mappings**
+  - [ ] ICD-10-CM → CCS (single-level)
+  - [ ] ICD-9-CM → CCS
+  - [ ] NDC → ATC
+  - [ ] NDC → RxNorm
 - [ ] **Serde support**
   - [ ] `Serialize`/`Deserialize` for `Code`, `System`
   - [ ] Feature flag: `serde`
@@ -79,36 +406,22 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. Minimum viable 
 
 ### v0.3.0 — Clinical Terminologies
 
-- [ ] **LOINC** (laboratory/clinical observations)
-  - [ ] Code lookup + hierarchy (class, system, component)
-  - [ ] Feature flag: `loinc`
-- [ ] **SNOMED CT** (US edition)
-  - [ ] Concept lookup + IS-A hierarchy traversal
-  - [ ] Feature flag: `snomed`
-  - [ ] Note: SNOMED requires NLM UMLS license acknowledgment in docs
-- [ ] **RxNorm**
-  - [ ] Concept lookup (ingredient, brand, clinical drug)
-  - [ ] RxNorm → ATC mapping
-  - [ ] Feature flag: `rxnorm`
-- [ ] **CPT** (Current Procedural Terminology)
-  - [ ] Category I codes + hierarchy
-  - [ ] Feature flag: `cpt`
-  - [ ] Note: CPT is AMA-licensed — evaluate embedding feasibility
-- [ ] **ICD-10-PCS**
-  - [ ] 7-character code structure parsing
-  - [ ] Feature flag: `icd10pcs`
-- [ ] **Multi-version support**
-  - [ ] API for selecting code table version at build time
-  - [ ] e.g., `features = ["icd10cm-fy2025"]` vs `features = ["icd10cm-fy2024"]`
+- [ ] **LOINC** — code lookup + hierarchy, feature flag: `loinc`
+- [ ] **SNOMED CT** (US edition) — IS-A hierarchy, feature flag: `snomed`
+  - [ ] Note: requires NLM UMLS license acknowledgment in docs
+- [ ] **RxNorm** — concept lookup + RxNorm→ATC mapping, feature flag: `rxnorm`
+- [ ] **CPT** — Category I codes, feature flag: `cpt`
+  - [ ] Note: AMA-licensed — evaluate embedding feasibility
+- [ ] **ICD-10-PCS** — 7-character structure parsing, feature flag: `icd10pcs`
+- [ ] **Multi-version support** — build-time code table version selection
 
 ### v1.0.0 — Stable API
 
-- [ ] API review: all public types finalized, no planned breaking changes
+- [ ] Public API review: all types finalized
 - [ ] Migration guide from 0.x
-- [ ] All code systems individually feature-gated
-- [ ] Default features: ICD-10-CM + ATC + LOINC
+- [ ] Default features: `icd10cm` + `atc` + `loinc`
 - [ ] MSRV policy documented
-- [ ] Published to crates.io with stable version
+- [ ] Published to crates.io
 
 ---
 
@@ -116,12 +429,8 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. Minimum viable 
 
 ### v0.1.0 — MIMIC-IV Core Tables
 
-Parse the most commonly used MIMIC-IV (v2.x) tables into Arrow. Enough to run mortality and readmission tasks.
+Parse the most commonly used MIMIC-IV (v2.x) tables into Arrow.
 
-- [ ] **Project scaffolding**
-  - [ ] `Cargo.toml` with metadata
-  - [ ] `lib.rs` with public module structure
-  - [ ] CI integrated into workspace pipeline
 - [ ] **Core ETL types**
   - [ ] `ClinicalEvent` Arrow schema definition (shared constant)
   - [ ] `DatasetConfig` struct (root path, table selection, batch size, parallelism)
@@ -142,68 +451,52 @@ Parse the most commonly used MIMIC-IV (v2.x) tables into Arrow. Enough to run mo
   - [ ] `outputevents.csv` parser
   - [ ] `procedureevents.csv` parser
 - [ ] **Parallel processing**
-  - [ ] `rayon`-based parallel table parsing (one thread per table)
-  - [ ] Chunk-level parallelism within large tables (chartevents, labevents)
+  - [ ] `rayon`-based parallel table parsing
+  - [ ] Chunk-level parallelism within large tables
 - [ ] **Memory-mapped I/O**
   - [ ] `memmap2` for all CSV reads
   - [ ] Configurable batch size (default 128K rows per RecordBatch)
 - [ ] **Output formats**
-  - [ ] `to_parquet(batches, path)` — write RecordBatch stream to Parquet
-  - [ ] `to_arrow_ipc(batches, path)` — write to Arrow IPC file
+  - [ ] `to_parquet(batches, path)`
+  - [ ] `to_arrow_ipc(batches, path)`
   - [ ] Streaming: `into_event_stream()` → `Iterator<Item = Result<RecordBatch>>`
 - [ ] **Tests**
-  - [ ] Unit tests with synthetic MIMIC-like CSV fixtures (no real PHI in repo)
+  - [ ] Synthetic MIMIC-like CSV fixtures (no real PHI in repo)
   - [ ] Schema validation: output matches `ClinicalEvent` schema
   - [ ] Round-trip: CSV → Arrow → Parquet → read back, verify row counts
-- [ ] **Documentation**
-  - [ ] Rustdoc for all public types
-  - [ ] `README.md` with usage examples
+- [ ] **Documentation + release**
+  - [ ] Rustdoc, crate `README.md`, `CHANGELOG.md`
   - [ ] Supported tables matrix
+  - [ ] Version bump `0.0.0` → `0.1.0`, publish
 
 ### v0.2.0 — MIMIC-III + Performance
 
 - [ ] **MIMIC-III (v1.4) support**
-  - [ ] `ADMISSIONS.csv`, `PATIENTS.csv` parsers
-  - [ ] `DIAGNOSES_ICD.csv`, `PROCEDURES_ICD.csv` parsers
-  - [ ] `PRESCRIPTIONS.csv`, `LABEVENTS.csv` parsers
-  - [ ] `CHARTEVENTS.csv` parser (streaming)
-  - [ ] `ICUSTAYS.csv` parser
-  - [ ] Column name normalization (MIMIC-III UPPER → lowercase)
-- [ ] **Optional `medcodes` integration**
-  - [ ] Feature flag: `medcodes`
+  - [ ] All core table parsers (ADMISSIONS, PATIENTS, DIAGNOSES_ICD, etc.)
+  - [ ] Column name normalization (UPPER → lowercase)
+- [ ] **Optional `medcodes` integration** (feature flag)
   - [ ] Code normalization during parsing
-  - [ ] Automatic ICD-9 vs ICD-10 detection based on MIMIC version
+  - [ ] Auto-detect ICD-9 vs ICD-10 by MIMIC version
 - [ ] **Performance benchmarks**
-  - [ ] `criterion` suite on MIMIC-IV demo dataset (public, no credential needed)
-  - [ ] Wall time and peak memory comparison methodology documented
-  - [ ] Benchmark results in README
-- [ ] **CLI tool**
+  - [ ] `criterion` suite on MIMIC-IV demo dataset (public)
+  - [ ] Wall time + peak memory comparison methodology documented
+- [ ] **CLI tool** (feature flag: `cli`)
   - [ ] `mimic-etl convert --input <path> --output <path> --format parquet`
   - [ ] `mimic-etl schema` — print ClinicalEvent Arrow schema
-  - [ ] `mimic-etl info --input <path>` — table row counts, size on disk
-  - [ ] Feature flag: `cli`
+  - [ ] `mimic-etl info --input <path>` — table row counts
 
-### v0.3.0 — MIMIC-IV v3.x + Notes
+### v0.3.0 — MIMIC-IV v3.x + Notes + ED
 
-- [ ] **MIMIC-IV v3.0 schema changes**
-  - [ ] Version auto-detection
-  - [ ] Handle renamed/restructured tables
-- [ ] **MIMIC-IV-Note**
-  - [ ] `discharge.csv` (discharge summaries)
-  - [ ] `radiology.csv` (radiology reports)
-- [ ] **MIMIC-IV-ED**
-  - [ ] `edstays.csv`, `triage.csv`, `vitalsign.csv` parsers
-- [ ] **Incremental parsing**
-  - [ ] Checkpoint file for long-running parses
-  - [ ] Resume from last completed table on failure
+- [ ] MIMIC-IV v3.0 schema changes + version auto-detection
+- [ ] MIMIC-IV-Note (discharge summaries, radiology reports)
+- [ ] MIMIC-IV-ED (edstays, triage, vitalsign)
+- [ ] Incremental/resumable parsing with checkpoint files
 
 ### v1.0.0 — Stable API
 
 - [ ] `ClinicalEvent` schema finalized
-- [ ] MIMIC-III v1.4 and MIMIC-IV v2.x fully supported
-- [ ] Migration guide from 0.x
-- [ ] MSRV policy documented
-- [ ] Published to crates.io with stable version
+- [ ] MIMIC-III v1.4 + MIMIC-IV v2.x fully supported
+- [ ] Migration guide, MSRV policy, published
 
 ---
 
@@ -213,10 +506,6 @@ Parse the most commonly used MIMIC-IV (v2.x) tables into Arrow. Enough to run mo
 
 Minimal task windowing engine with one fully implemented task.
 
-- [ ] **Project scaffolding**
-  - [ ] `Cargo.toml` with metadata
-  - [ ] `lib.rs` with public module structure
-  - [ ] CI integrated into workspace pipeline
 - [ ] **Core types**
   - [ ] `TaskDefinition` trait
   - [ ] `TaskWindows` struct (observation, gap, prediction, anchor)
@@ -229,115 +518,56 @@ Minimal task windowing engine with one fully implemented task.
   - [ ] Handle multi-visit patients
 - [ ] **In-hospital mortality prediction**
   - [ ] `MortalityPrediction` implementing `TaskDefinition`
-  - [ ] Configurable observation window (default: 48h from admission)
+  - [ ] Configurable observation window (default: 48h)
   - [ ] Label: binary (died during hospitalization)
-  - [ ] Features: code frequency vectors, lab value statistics (min/max/mean/last)
+  - [ ] Features: code frequency vectors, lab value statistics
   - [ ] Exclusion: stays < observation window, patients < 18
 - [ ] **Patient-level splitting**
-  - [ ] `split_by_patient(batches, ratios)` → (train, val, test) streams
-  - [ ] Deterministic split via patient_id hashing (reproducible)
-  - [ ] No patient appears in multiple splits
+  - [ ] `split_by_patient(batches, ratios)` → (train, val, test)
+  - [ ] Deterministic split via patient_id hashing
+  - [ ] No patient in multiple splits
 - [ ] **Output**
-  - [ ] RecordBatch with feature columns + label column
-  - [ ] Export to Parquet / Arrow IPC
-  - [ ] Schema metadata (task name, window parameters, split assignment)
+  - [ ] RecordBatch with feature + label columns
+  - [ ] Parquet / Arrow IPC export
+  - [ ] Schema metadata (task name, windows, split)
 - [ ] **Tests**
   - [ ] Synthetic patient timeline tests
-  - [ ] Data leakage verification: no prediction-window events in features
+  - [ ] Data leakage verification
   - [ ] Patient-level split verification
-  - [ ] Known-answer test: hand-computed labels for 5 synthetic patients
-- [ ] **Documentation**
-  - [ ] Rustdoc for all public types
-  - [ ] `README.md` with end-to-end example
+  - [ ] Known-answer labels for synthetic patients
+- [ ] **Documentation + release**
+  - [ ] Rustdoc, `README.md` with end-to-end example, `CHANGELOG.md`
+  - [ ] Version bump `0.0.0` → `0.1.0`, publish
 
 ### v0.2.0 — Task Expansion
 
-- [ ] **30-day readmission prediction**
-  - [ ] Label: binary (readmitted within 30d of discharge)
-  - [ ] Anchor: discharge time
-  - [ ] Exclusion: in-hospital deaths, transfers
-- [ ] **Length of stay prediction**
-  - [ ] Multiclass: bucketed (0-1d, 1-3d, 3-7d, 7-14d, 14d+)
-  - [ ] Regression variant: continuous LOS in hours
-- [ ] **Drug recommendation**
-  - [ ] Multi-label: medication set per visit
-  - [ ] Features: diagnosis + procedure codes from current + prior visits
-  - [ ] Optional DDI matrix integration
-- [ ] **Optional `medcodes` integration**
-  - [ ] Feature flag: `medcodes`
-  - [ ] Code grouping (ICD-10 → CCS categories) to reduce feature dimensionality
-- [ ] **Custom task API**
-  - [ ] Documentation + example for implementing `TaskDefinition`
-  - [ ] Builder pattern for common task patterns
+- [ ] **30-day readmission prediction** (binary, anchor: discharge)
+- [ ] **Length of stay prediction** (multiclass bucketed + regression variant)
+- [ ] **Drug recommendation** (multi-label, optional DDI matrix)
+- [ ] **Optional `medcodes` integration** (feature flag, code grouping for features)
+- [ ] **Custom task API** (docs + example for `TaskDefinition` implementors)
 
 ### v0.3.0 — Sepsis + Advanced Windowing
 
 - [ ] **Sepsis onset prediction**
-  - [ ] Configurable Sepsis-3 criteria (suspected infection + SOFA ≥ 2)
-  - [ ] Variable lookback windows (1h, 3h, 6h, 12h before onset)
-  - [ ] Negative sampling strategy for non-sepsis controls
+  - [ ] Configurable Sepsis-3 criteria
+  - [ ] Variable lookback windows (1h, 3h, 6h, 12h)
+  - [ ] Negative sampling strategy
   - [ ] Temporal advantage metric
-- [ ] **Sliding window mode**
-  - [ ] Samples at regular intervals (e.g., every 1h) during a stay
-  - [ ] Useful for real-time prediction simulation
-- [ ] **Feature engineering utilities**
-  - [ ] Temporal binning (sub-intervals within observation window)
-  - [ ] Code co-occurrence features
-  - [ ] Lab trend features (slope, acceleration)
-  - [ ] Missing data indicators
+- [ ] **Sliding window mode** (samples at regular intervals)
+- [ ] **Feature engineering utilities** (temporal bins, code co-occurrence, lab trends, missingness)
 
 ### v1.0.0 — Stable API
 
 - [ ] `TaskDefinition` trait finalized
 - [ ] All v0.x tasks stable
-- [ ] Migration guide from 0.x
-- [ ] MSRV policy documented
-- [ ] Published to crates.io with stable version
-
----
-
-## Workspace / Infrastructure
-
-### Initial Setup
-
-- [ ] **Workspace manifest**
-  - [ ] Root `Cargo.toml` with `[workspace]` members
-  - [ ] Shared `rust-version`, `edition`, `license` in `[workspace.package]`
-  - [ ] Shared dependency versions in `[workspace.dependencies]`
-- [ ] **CI / CD (GitHub Actions)**
-  - [ ] Test all crates on Linux (ubuntu-latest)
-  - [ ] `cargo clippy -- -D warnings`
-  - [ ] `cargo fmt --all -- --check`
-  - [ ] `cargo doc --no-deps`
-  - [ ] Dependabot for dependency updates
-- [ ] **Licensing**
-  - [ ] `LICENSE-MIT` file
-  - [ ] `LICENSE-APACHE` file
-  - [ ] SPDX identifiers in all `Cargo.toml`
-- [ ] **Repository files**
-  - [ ] `.gitignore` (target/, data/, *.parquet, *.arrow)
-  - [ ] `CONTRIBUTING.md`
-  - [ ] `SECURITY.md`
-- [ ] **Code quality**
-  - [ ] `rustfmt.toml`
-  - [ ] Workspace-level clippy lints in root `Cargo.toml`
-  - [ ] `deny.toml` for `cargo-deny` (license + advisory audit)
-
-### Ongoing
-
-- [ ] CI matrix: macOS + Windows runners
-- [ ] MSRV check in CI
-- [ ] `cargo-release` config for workspace publishing
-- [ ] GitHub Actions: auto-publish to crates.io on tag push
-- [ ] Per-crate `CHANGELOG.md` via `git-cliff`
-- [ ] GitHub Pages docs site (`mdbook` or hosted rustdoc)
-- [ ] `criterion` benchmarks in CI with regression detection
+- [ ] Migration guide, MSRV policy, published
 
 ---
 
 ## Future Crates (Post-1.0)
 
-Tracked for roadmap visibility. Will not block any 1.0 release above.
+Tracked for roadmap visibility. Will not block any 1.0 release.
 
 | Crate | Purpose | Depends on |
 |-------|---------|------------|
@@ -351,16 +581,23 @@ Tracked for roadmap visibility. Will not block any 1.0 release above.
 
 ---
 
-## Priority Order
-
-Releases are sequenced by dependency:
+## Release Sequence
 
 ```
-medcodes v0.1.0          ← start here (zero internal dependencies)
+Phase 0 (bootstrap)      ← YOU ARE HERE
+    │
+    ▼
+medcodes v0.1.0          ← first crate published (zero internal deps)
     │
     ├─► mimic-etl v0.1.0  ← second (optionally depends on medcodes)
     │
     └─► clinical-tasks v0.1.0  ← third (consumes Arrow, optionally uses medcodes)
+    │
+    ▼
+Iterate: v0.2.0, v0.3.0 across all crates in parallel
+    │
+    ▼
+API review → v1.0.0 per crate (independent timelines)
 ```
 
 Within each release, checklist items are ordered by implementation priority (top = first).

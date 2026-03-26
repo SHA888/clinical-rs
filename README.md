@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE-MIT)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE-APACHE)
-[![Rust](https://img.shields.io/badge/rust-1.82%2B-orange.svg)](https://www.rust-lang.org)
+[![Rust](https://img.shields.io/badge/rust-1.94%2B-orange.svg)](https://www.rust-lang.org)
 
 [Architecture](ARCHITECTURE.md) · [Roadmap](TODO.md) · [Contributing](CONTRIBUTING.md)
 
@@ -140,7 +140,7 @@ clinical-rs/
 
 ## Requirements
 
-- Rust 1.82+ (2024 edition)
+- Rust 1.94+ (2024 edition)
 - MIMIC-III/IV access via [PhysioNet](https://physionet.org/) credentialed access (for `mimic-etl`)
 
 ## License
