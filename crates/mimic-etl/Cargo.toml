@@ -1,0 +1,39 @@
+[package]
+name = "mimic-etl"
+version = "0.0.0"
+description = "MIMIC-III/IV clinical database ETL — CSV to Apache Arrow"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+categories = ["science", "parser-implementations"]
+keywords = ["mimic", "clinical", "arrow", "ehr", "healthcare"]
+readme = "README.md"
+
+[dependencies]
+arrow = { workspace = true }
+parquet = { workspace = true }
+csv = { workspace = true }
+rayon = { workspace = true }
+memmap2 = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+medcodes = { path = "../medcodes", optional = true }
+clap = { version = "4.0", optional = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+tempfile = { workspace = true }
+
+[features]
+default = []
+medcodes = ["dep:medcodes"]
+cli = ["dep:clap"]          # future: CLI binary
+
+[[bench]]
+name = "parse"
+harness = false
+
+[lints]
+workspace = true

@@ -3,6 +3,13 @@
 **/*.rs.bk
 Cargo.lock
 
+# Data files
+/data/
+*.parquet
+*.arrow
+*.ipc
+*.csv.gz
+
 # IDE
 .vscode/
 .idea/

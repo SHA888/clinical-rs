@@ -1,0 +1,33 @@
+[package]
+name = "medcodes"
+version = "0.0.0"                         # 0.0.0 = unpublished placeholder
+description = "Medical code ontologies, hierarchy traversal, and cross-system mapping"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+categories = ["science", "data-structures"]
+keywords = ["icd10", "medical-codes", "snomed", "loinc", "healthcare"]
+readme = "README.md"
+
+[dependencies]
+thiserror = { workspace = true }
+phf = { workspace = true }
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+proptest = { workspace = true }
+
+[features]
+default = ["icd10cm"]
+icd10cm = []
+serde = ["dep:serde"]
+
+[[bench]]
+name = "lookup"
+harness = false
+
+[lints]
+workspace = true

@@ -1,0 +1,5 @@
+# Rust files
+*.rs diff=rust
+
+# Enforce LF line endings
+* text=lf eol=lf

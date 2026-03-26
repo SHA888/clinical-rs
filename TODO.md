@@ -20,28 +20,28 @@ Comprehensive checklist organized by phase and [SemVer](https://semver.org/) rel
 
 Everything needed before writing the first line of library code. This phase produces a fully configured, CI-protected, release-ready Cargo workspace with zero library functionality.
 
-### 0.1 — Toolchain & Environment
+### 0.0.1 — Toolchain & Environment
 
-- [ ] **Rust toolchain**
-  - [ ] `rust-toolchain.toml` pinning `channel = "1.94.0"` (current stable, 2024 edition)
-  - [ ] Components: `rustfmt`, `clippy`, `rust-src`, `rust-analyzer`
+- [x] **Rust toolchain**
+  - [x] `rust-toolchain.toml` pinning `channel = "1.94.0"` (current stable, 2024 edition)
+  - [x] Components: `rustfmt`, `clippy`, `rust-src`, `rust-analyzer`
   - [ ] Verify: `rustup show` matches on fresh clone
-- [ ] **Dev tools (documented in `CONTRIBUTING.md`)**
-  - [ ] `cargo-nextest` 0.9.x — test runner (parallel, better output than `cargo test`)
-  - [ ] `cargo-deny` 0.19.x — license audit, advisory DB, dependency policy
-  - [ ] `cargo-release` 1.1.x — workspace-aware semver release flow
-  - [ ] `cargo-audit` 0.22.x — security advisory checking
-  - [ ] `git-cliff` 2.12.x — conventional-commit changelog generation
-  - [ ] `cargo-machete` — detect unused dependencies
-  - [ ] `cargo-udeps` (nightly only, optional) — detect unused deps at compile time
-- [ ] **Git configuration**
-  - [ ] `.gitignore`: `target/`, `data/`, `*.parquet`, `*.arrow`, `*.ipc`, `.env`, `*.csv.gz`
-  - [ ] `.gitattributes`: `*.rs diff=rust`, LF line endings enforced
-  - [ ] Conventional Commits enforced in `CONTRIBUTING.md` (feat/fix/docs/chore/refactor/test/ci)
+- [x] **Dev tools (documented in `CONTRIBUTING.md`)**
+  - [x] `cargo-nextest` 0.9.x — test runner (parallel, better output than `cargo test`)
+  - [x] `cargo-deny` 0.19.x — license audit, advisory DB, dependency policy
+  - [x] `cargo-release` 1.1.x — workspace-aware semver release flow
+  - [x] `cargo-audit` 0.22.x — security advisory checking
+  - [x] `git-cliff` 2.12.x — conventional-commit changelog generation
+  - [x] `cargo-machete` — detect unused dependencies
+  - [x] `cargo-udeps` (nightly only, optional) — detect unused deps at compile time
+- [x] **Git configuration**
+  - [x] `.gitignore`: `target/`, `data/`, `*.parquet`, `*.arrow`, `*.ipc`, `.env`, `*.csv.gz`
+  - [x] `.gitattributes`: `*.rs diff=rust`, LF line endings enforced
+  - [x] Conventional Commits enforced in `CONTRIBUTING.md` (feat/fix/docs/chore/refactor/test/ci)
 
-### 0.2 — Workspace Manifest
+### 0.0.2 — Workspace Manifest
 
-- [ ] **Root `Cargo.toml`**
+- [x] **Root `Cargo.toml`**
   ```toml
   [workspace]
   resolver = "2"
@@ -79,15 +79,15 @@ Everything needed before writing the first line of library code. This phase prod
   tempfile = "3"
   insta = "1"          # snapshot testing
   ```
-- [ ] Verify: `cargo check --workspace` passes with empty `lib.rs` stubs
-- [ ] Verify: `cargo fmt --all -- --check` passes
-- [ ] Verify: `cargo clippy --workspace -- -D warnings` passes
+- [x] Verify: `cargo check --workspace` passes with empty `lib.rs` stubs
+- [x] Verify: `cargo fmt --all -- --check` passes
+- [x] Verify: `cargo clippy --workspace -- -D warnings` passes
 
-### 0.3 — Crate Scaffolding (Empty Shells)
+### 0.0.3 — Crate Scaffolding (Empty Shells)
 
 Each crate gets a publishable-but-empty skeleton.
 
-- [ ] **`crates/medcodes/Cargo.toml`**
+- [x] **`crates/medcodes/Cargo.toml`**
   ```toml
   [package]
   name = "medcodes"
@@ -120,10 +120,10 @@ Each crate gets a publishable-but-empty skeleton.
   name = "lookup"
   harness = false
   ```
-  - [ ] `crates/medcodes/src/lib.rs` — module stubs, `#![doc]` header, public re-exports
-  - [ ] `crates/medcodes/README.md` — crate-level README (rendered on crates.io)
-  - [ ] `crates/medcodes/CHANGELOG.md` — initialized with `## [Unreleased]`
-- [ ] **`crates/mimic-etl/Cargo.toml`**
+  - [x] `crates/medcodes/src/lib.rs` — module stubs, `#![doc]` header, public re-exports
+  - [x] `crates/medcodes/README.md` — crate-level README (rendered on crates.io)
+  - [x] `crates/medcodes/CHANGELOG.md` — initialized with `## [Unreleased]`
+- [x] **`crates/mimic-etl/Cargo.toml`**
   ```toml
   [package]
   name = "mimic-etl"
@@ -161,10 +161,10 @@ Each crate gets a publishable-but-empty skeleton.
   name = "parse"
   harness = false
   ```
-  - [ ] `crates/mimic-etl/src/lib.rs` — module stubs
-  - [ ] `crates/mimic-etl/README.md`
-  - [ ] `crates/mimic-etl/CHANGELOG.md`
-- [ ] **`crates/clinical-tasks/Cargo.toml`**
+  - [x] `crates/mimic-etl/src/lib.rs` — module stubs
+  - [x] `crates/mimic-etl/README.md`
+  - [x] `crates/mimic-etl/CHANGELOG.md`
+- [x] **`crates/clinical-tasks/Cargo.toml`**
   ```toml
   [package]
   name = "clinical-tasks"
@@ -197,21 +197,21 @@ Each crate gets a publishable-but-empty skeleton.
   name = "windowing"
   harness = false
   ```
-  - [ ] `crates/clinical-tasks/src/lib.rs` — module stubs
-  - [ ] `crates/clinical-tasks/README.md`
-  - [ ] `crates/clinical-tasks/CHANGELOG.md`
-- [ ] **Final check:** `cargo check --workspace` compiles all three empty crates
+  - [x] `crates/clinical-tasks/src/lib.rs` — module stubs
+  - [x] `crates/clinical-tasks/README.md`
+  - [x] `crates/clinical-tasks/CHANGELOG.md`
+- [x] **Final check:** `cargo check --workspace` compiles all three empty crates
 
-### 0.4 — Code Quality Configuration
+### 0.0.4 — Code Quality Configuration
 
-- [ ] **`rustfmt.toml`**
+- [x] **`rustfmt.toml`**
   ```toml
   edition = "2024"
   max_width = 100
   use_field_init_shorthand = true
   use_try_shorthand = true
   ```
-- [ ] **Workspace-level clippy lints** (in root `Cargo.toml`)
+- [x] **Workspace-level clippy lints** (in root `Cargo.toml`)
   ```toml
   [workspace.lints.rust]
   unsafe_code = "forbid"
@@ -227,7 +227,7 @@ Each crate gets a publishable-but-empty skeleton.
   panic = "warn"
   ```
   Each crate inherits via `[lints] workspace = true` in its `Cargo.toml`.
-- [ ] **`deny.toml`** (cargo-deny config)
+- [x] **`deny.toml`** (cargo-deny config)
   ```toml
   [advisories]
   vulnerability = "deny"
@@ -247,9 +247,9 @@ Each crate gets a publishable-but-empty skeleton.
   unknown-git = "deny"
   allow-registry = ["https://github.com/rust-lang/crates.io-index"]
   ```
-- [ ] **Verify:** `cargo deny check` passes on empty workspace
+- [x] **Verify:** `cargo deny check` passes on empty workspace
 
-### 0.5 — CI / CD Pipeline (GitHub Actions)
+### 0.0.5 — CI / CD Pipeline (GitHub Actions)
 
 - [ ] **`.github/workflows/ci.yml`** — runs on every push and PR
   - [ ] Matrix: `ubuntu-latest` (primary), `macos-latest`, `windows-latest`
@@ -276,7 +276,7 @@ Each crate gets a publishable-but-empty skeleton.
   - [ ] `main` branch: require PR, require CI pass, require 1 approval (when collaborators exist)
   - [ ] No force push to `main`
 
-### 0.6 — Repository Files
+### 0.0.6 — Repository Files
 
 - [ ] **`LICENSE-MIT`** — MIT license text with `Kresna Sucandra` and current year
 - [ ] **`LICENSE-APACHE`** — Apache 2.0 full text
@@ -300,7 +300,7 @@ Each crate gets a publishable-but-empty skeleton.
   - [ ] Checklist: tests added, docs updated, CHANGELOG entry, `cargo fmt`, `cargo clippy`
 - [ ] **`.github/FUNDING.yml`** (optional, if sponsorship desired)
 
-### 0.7 — Release Infrastructure
+### 0.0.7 — Release Infrastructure
 
 - [ ] **`cliff.toml`** (git-cliff config)
   - [ ] Conventional Commits parsing
@@ -322,7 +322,7 @@ Each crate gets a publishable-but-empty skeleton.
   - [ ] Pre-release hook: `cargo deny check && cargo nextest run --workspace`
 - [ ] **Dry-run test:** `cargo release patch --workspace --dry-run` completes without error
 
-### 0.8 — Verification Checkpoint
+### 0.0.8 — Verification Checkpoint
 
 All of the following must pass on a fresh `git clone`:
 
