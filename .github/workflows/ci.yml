@@ -34,6 +34,12 @@ jobs:
         with:
           workspaces: .
 
+      - name: Install cargo-nextest
+        run: cargo install cargo-nextest --locked
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
       - name: Check formatting
         run: cargo fmt --all -- --check
 
