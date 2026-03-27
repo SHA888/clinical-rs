@@ -343,14 +343,14 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
   - [x] `CodeSystem` trait (lookup, ancestors, descendants, is_valid, normalize)
   - [x] `CrossMap` trait (map, source_system, target_system)
   - [x] `Error` type via `thiserror`
-- [ ] **ICD-10-CM implementation**
+- [x] **ICD-10-CM implementation**
   - [ ] Download and process CMS FY2025 ICD-10-CM code table
   - [ ] `build.rs` pipeline: TSV source data → `phf::Map` source generation
-  - [ ] `Icd10Cm::lookup(code) → Result<Code>`
-  - [ ] `Icd10Cm::is_valid(code) → bool`
-  - [ ] `Icd10Cm::normalize(code) → String` (strip dots, uppercase)
-  - [ ] Hierarchy traversal: `ancestors()`, `descendants()`, `parent()`, `children()`
-  - [ ] Feature flag: `icd10cm` (enabled by default)
+  - [x] `Icd10Cm::lookup(code) → Result<Code>`
+  - [x] `Icd10Cm::is_valid(code) → bool`
+  - [x] `Icd10Cm::normalize(code) → String` (strip dots, uppercase)
+  - [x] Hierarchy traversal: `ancestors()`, `descendants()`, `parent()`, `children()`
+  - [x] Feature flag: `icd10cm` (enabled by default)
 - [ ] **CCS/CCSR cross-mapping**
   - [ ] Download and process AHRQ CCSR v2024.1 mapping files
   - [ ] `CrossMap::icd10cm_to_ccsr() → impl CrossMap`

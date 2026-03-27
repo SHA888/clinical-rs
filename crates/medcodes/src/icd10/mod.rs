@@ -66,7 +66,15 @@ impl CodeSystem for Icd10Cm {
 
     /// Normalize an ICD-10-CM code.
     fn normalize(&self, code: &str) -> String {
-        self.normalize(code)
+        // Call the struct's normalize method to avoid infinite recursion
+        // We need to call the inherent method, not the trait method
+        let mut result = String::with_capacity(code.len());
+        for ch in code.chars() {
+            if ch != '.' {
+                result.push(ch.to_ascii_uppercase());
+            }
+        }
+        result
     }
 
     /// Get all ancestors of a code in the ICD-10-CM hierarchy.
