@@ -322,10 +322,10 @@ All of the following must pass on a fresh `git clone`:
 - [x] `cargo nextest run --workspace` — tests pass (trivially, since no tests yet)
 - [x] `cargo doc --workspace --no-deps` — docs build
 - [x] `cargo deny check` — license + advisory clean
-- [ ] `cargo release patch --workspace --dry-run` — release flow works
-- [ ] GitHub Actions CI is green on `main`
-- [ ] README renders correctly on GitHub
-- [ ] ARCHITECTURE.md and TODO.md are linked and accessible
+- [x] `cargo release patch --workspace --dry-run` — release flow works
+- [x] GitHub Actions CI is green on `main`
+- [x] README renders correctly on GitHub
+- [x] ARCHITECTURE.md and TODO.md are linked and accessible
 
 **Phase 0 is complete when a contributor can clone, build, test, lint, and dry-run a release with zero manual setup beyond `rustup` and tool installs.**
 
