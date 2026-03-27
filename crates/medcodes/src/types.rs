@@ -116,7 +116,7 @@ pub trait CodeSystem {
     /// Check if a code is valid in this system.
     fn is_valid(&self, code: &str) -> bool;
 
-    /// Normalize an ICD-10-CM code.
+    /// Normalize a code (remove formatting, uppercase, etc.).
     #[must_use]
     fn normalize(&self, code: &str) -> String;
 
@@ -169,6 +169,7 @@ pub trait CrossMap {
 #[derive(Debug, thiserror::Error)]
 pub enum MedCodeError {
     /// Code not found in the specified system.
+    #[error("Code not found: `{code}` in `{system}`")]
     NotFound {
         /// The code that was not found
         code: String,
@@ -177,6 +178,7 @@ pub enum MedCodeError {
     },
 
     /// Invalid code format for the specified system.
+    #[error("Invalid code format: `{code}` for `{system}`")]
     InvalidFormat {
         /// The code with invalid format
         code: String,
@@ -185,6 +187,7 @@ pub enum MedCodeError {
     },
 
     /// No mapping found between systems.
+    #[error("No mapping found: `{code}` from `{source_system}` to `{target_system}`")]
     NoMapping {
         /// The code that could not be mapped
         code: String,
@@ -195,45 +198,18 @@ pub enum MedCodeError {
     },
 
     /// Hierarchy traversal error.
+    #[error("Hierarchy error: `{message}`")]
     Hierarchy {
         /// Error message describing the hierarchy issue
         message: String,
     },
 
     /// Data processing error.
+    #[error("Data error: `{message}`")]
     Data {
         /// Error message describing the data issue
         message: String,
     },
-}
-
-impl Display for MedCodeError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::NotFound { code, system } => {
-                write!(f, "Code not found: `{code}` in `{system}`")
-            }
-            Self::InvalidFormat { code, system } => {
-                write!(f, "Invalid code format: `{code}` for `{system}`")
-            }
-            Self::NoMapping {
-                code,
-                source_system,
-                target_system,
-            } => {
-                write!(
-                    f,
-                    "No mapping found: `{code}` from `{source_system}` to `{target_system}`"
-                )
-            }
-            Self::Hierarchy { message } => {
-                write!(f, "Hierarchy error: `{message}`")
-            }
-            Self::Data { message } => {
-                write!(f, "Data error: `{message}`")
-            }
-        }
-    }
 }
 
 impl MedCodeError {

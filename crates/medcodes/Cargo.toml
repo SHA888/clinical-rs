@@ -16,6 +16,9 @@ thiserror = { workspace = true }
 phf = { workspace = true }
 serde = { workspace = true, optional = true }
 
+[build-dependencies]
+quick-xml = { version = "0.31", features = ["serialize"] }
+
 [dev-dependencies]
 criterion = { workspace = true }
 proptest = { workspace = true }

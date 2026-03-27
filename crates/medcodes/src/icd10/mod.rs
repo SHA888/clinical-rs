@@ -75,10 +75,14 @@ impl CodeSystem for Icd10Cm {
     /// Get all ancestors of a code in the ICD-10-CM hierarchy.
     fn ancestors(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
         let normalized = self.normalize(code);
+        // Validate the code exists first
+        if !self.codes.contains_key(&normalized) {
+            return Err(MedCodeError::not_found(code, System::Icd10Cm));
+        }
         let mut ancestors = Vec::new();
-        let mut current = normalized;
+        let mut current: String = normalized;
 
-        while let Some(Some(parent)) = self.parents.get(&current) {
+        while let Some(Some(parent)) = self.parents.get(current.as_str()) {
             if let Some(parent_code) = self.codes.get(parent) {
                 ancestors.push(parent_code.clone());
                 current = parent.to_string();
@@ -93,10 +97,19 @@ impl CodeSystem for Icd10Cm {
     /// Get all descendants of a code in the ICD-10-CM hierarchy.
     fn descendants(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
         let normalized = self.normalize(code);
+        // Validate the code exists first
+        if !self.codes.contains_key(&normalized) {
+            return Err(MedCodeError::not_found(code, System::Icd10Cm));
+        }
         let mut descendants = Vec::new();
         let mut to_visit = vec![normalized];
+        let mut visited = std::collections::HashSet::new();
 
         while let Some(current) = to_visit.pop() {
+            // Skip if already visited to prevent cycles
+            if !visited.insert(current.clone()) {
+                continue;
+            }
             if let Some(children) = self.children.get(&current) {
                 for child in *children {
                     if let Some(child_code) = self.codes.get(child) {
