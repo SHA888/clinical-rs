@@ -2,7 +2,7 @@
 //!
 //! This module provides ICD-10-CM code lookup, validation, and hierarchy traversal.
 
-use crate::{Code, CodeSystem, Error, System};
+use crate::{Code, CodeSystem, MedCodeError, System};
 use phf::phf_map;
 
 /// ICD-10-CM code system implementation.
@@ -17,7 +17,8 @@ pub struct Icd10Cm {
 }
 
 impl Icd10Cm {
-    /// Create a new ICD-10-CM code system instance.
+    /// Create a new `Icd10Cm` instance.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             codes: &ICD10_CM_CODES,
@@ -28,17 +29,17 @@ impl Icd10Cm {
 
     /// Normalize an ICD-10-CM code (remove dots, uppercase).
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use medcodes::icd10::Icd10Cm;
-    ///
-    /// let icd10 = Icd10Cm::new();
-    /// assert_eq!(icd10.normalize("I10.9"), "I109");
-    /// assert_eq!(icd10.normalize("i10.9"), "I109");
-    /// ```
+    /// This is an inherent method that provides the actual implementation.
+    /// The trait method calls this to avoid infinite recursion.
+    #[must_use]
     pub fn normalize(&self, code: &str) -> String {
-        code.replace('.', "").to_uppercase()
+        let mut result = String::with_capacity(code.len());
+        for ch in code.chars() {
+            if ch != '.' {
+                result.push(ch.to_ascii_uppercase());
+            }
+        }
+        result
     }
 }
 
@@ -50,12 +51,12 @@ impl Default for Icd10Cm {
 
 impl CodeSystem for Icd10Cm {
     /// Look up an ICD-10-CM code.
-    fn lookup(&self, code: &str) -> Result<Code, Error> {
+    fn lookup(&self, code: &str) -> Result<Code, MedCodeError> {
         let normalized = self.normalize(code);
         self.codes
             .get(&normalized)
             .cloned()
-            .ok_or_else(|| Error::not_found(code, System::Icd10Cm))
+            .ok_or_else(|| MedCodeError::not_found(code, System::Icd10Cm))
     }
 
     /// Check if a code is valid in ICD-10-CM.
@@ -68,17 +69,11 @@ impl CodeSystem for Icd10Cm {
     fn normalize(&self, code: &str) -> String {
         // Call the struct's normalize method to avoid infinite recursion
         // We need to call the inherent method, not the trait method
-        let mut result = String::with_capacity(code.len());
-        for ch in code.chars() {
-            if ch != '.' {
-                result.push(ch.to_ascii_uppercase());
-            }
-        }
-        result
+        Self::normalize(self, code)
     }
 
     /// Get all ancestors of a code in the ICD-10-CM hierarchy.
-    fn ancestors(&self, code: &str) -> Result<Vec<Code>, Error> {
+    fn ancestors(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
         let normalized = self.normalize(code);
         let mut ancestors = Vec::new();
         let mut current = normalized;
@@ -96,7 +91,7 @@ impl CodeSystem for Icd10Cm {
     }
 
     /// Get all descendants of a code in the ICD-10-CM hierarchy.
-    fn descendants(&self, code: &str) -> Result<Vec<Code>, Error> {
+    fn descendants(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
         let normalized = self.normalize(code);
         let mut descendants = Vec::new();
         let mut to_visit = vec![normalized];
@@ -116,33 +111,32 @@ impl CodeSystem for Icd10Cm {
     }
 
     /// Get the immediate parent of a code.
-    fn parent(&self, code: &str) -> Result<Option<Code>, Error> {
+    fn parent(&self, code: &str) -> Result<Option<Code>, MedCodeError> {
         let normalized = self.normalize(code);
         if let Some(Some(parent)) = self.parents.get(&normalized) {
-            if let Some(parent_code) = self.codes.get(parent) {
-                Ok(Some(parent_code.clone()))
-            } else {
-                Ok(None)
-            }
+            self.codes
+                .get(parent)
+                .map_or(Ok(None), |parent_code| Ok(Some(parent_code.clone())))
         } else {
             Ok(None)
         }
     }
 
     /// Get all immediate children of a code.
-    fn children(&self, code: &str) -> Result<Vec<Code>, Error> {
+    fn children(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
         let normalized = self.normalize(code);
-        if let Some(children) = self.children.get(&normalized) {
-            let mut result = Vec::new();
-            for child in *children {
-                if let Some(child_code) = self.codes.get(child) {
-                    result.push(child_code.clone());
+        self.children.get(&normalized).map_or_else(
+            || Ok(Vec::new()),
+            |children| {
+                let mut result = Vec::new();
+                for child in *children {
+                    if let Some(child_code) = self.codes.get(child) {
+                        result.push(child_code.clone());
+                    }
                 }
-            }
-            Ok(result)
-        } else {
-            Ok(Vec::new())
-        }
+                Ok(result)
+            },
+        )
     }
 }
 

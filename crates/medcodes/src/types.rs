@@ -1,7 +1,6 @@
 //! Core types for medical code systems.
 
 use std::fmt::{self, Display, Formatter};
-use thiserror::Error;
 
 /// Supported medical code systems.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -20,7 +19,7 @@ pub enum System {
     Loinc,
     /// Systematized Nomenclature of Medicine Clinical Terms
     SnoMed,
-    /// RxNorm
+    /// `RxNorm`
     RxNorm,
     /// Clinical Classifications Software
     Ccs,
@@ -33,17 +32,17 @@ pub enum System {
 impl Display for System {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            System::Icd9Cm => write!(f, "ICD-9-CM"),
-            System::Icd10Cm => write!(f, "ICD-10-CM"),
-            System::Icd10Pcs => write!(f, "ICD-10-PCS"),
-            System::Atc => write!(f, "ATC"),
-            System::Ndc => write!(f, "NDC"),
-            System::Loinc => write!(f, "LOINC"),
-            System::SnoMed => write!(f, "SNOMED CT"),
-            System::RxNorm => write!(f, "RxNorm"),
-            System::Ccs => write!(f, "CCS"),
-            System::Ccsr => write!(f, "CCSR"),
-            System::Cpt => write!(f, "CPT"),
+            Self::Icd9Cm => write!(f, "ICD-9-CM"),
+            Self::Icd10Cm => write!(f, "ICD-10-CM"),
+            Self::Icd10Pcs => write!(f, "ICD-10-PCS"),
+            Self::Atc => write!(f, "ATC"),
+            Self::Ndc => write!(f, "NDC"),
+            Self::Loinc => write!(f, "LOINC"),
+            Self::SnoMed => write!(f, "SNOMED CT"),
+            Self::RxNorm => write!(f, "RxNorm"),
+            Self::Ccs => write!(f, "CCS"),
+            Self::Ccsr => write!(f, "CCSR"),
+            Self::Cpt => write!(f, "CPT"),
         }
     }
 }
@@ -61,6 +60,7 @@ pub struct Code {
 
 impl Code {
     /// Create a new medical code.
+    #[must_use]
     pub fn new(system: System, code: impl Into<String>, description: impl Into<String>) -> Self {
         Self {
             system,
@@ -70,16 +70,19 @@ impl Code {
     }
 
     /// Get the system this code belongs to.
-    pub fn system(&self) -> System {
+    #[must_use]
+    pub const fn system(&self) -> System {
         self.system
     }
 
     /// Get the raw code value.
+    #[must_use]
     pub fn code(&self) -> &str {
         &self.code
     }
 
     /// Get the description.
+    #[must_use]
     pub fn description(&self) -> &str {
         &self.description
     }
@@ -91,34 +94,69 @@ impl Display for Code {
     }
 }
 
+impl From<(System, &'static str, &'static str)> for Code {
+    fn from((system, code, description): (System, &'static str, &'static str)) -> Self {
+        Self {
+            system,
+            code: code.to_string(),
+            description: description.to_string(),
+        }
+    }
+}
+
 /// Trait for code system implementations.
 pub trait CodeSystem {
     /// Look up a code by its value.
-    fn lookup(&self, code: &str) -> Result<Code, Error>;
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the code is not found in this system.
+    fn lookup(&self, code: &str) -> Result<Code, MedCodeError>;
 
     /// Check if a code is valid in this system.
     fn is_valid(&self, code: &str) -> bool;
 
-    /// Normalize a code (remove dots, uppercase, etc.).
+    /// Normalize an ICD-10-CM code.
+    #[must_use]
     fn normalize(&self, code: &str) -> String;
 
     /// Get all ancestors of a code in the hierarchy.
-    fn ancestors(&self, code: &str) -> Result<Vec<Code>, Error>;
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the code is not found or hierarchy traversal fails.
+    fn ancestors(&self, code: &str) -> Result<Vec<Code>, MedCodeError>;
 
     /// Get all descendants of a code in the hierarchy.
-    fn descendants(&self, code: &str) -> Result<Vec<Code>, Error>;
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the code is not found or hierarchy traversal fails.
+    fn descendants(&self, code: &str) -> Result<Vec<Code>, MedCodeError>;
 
     /// Get the immediate parent of a code.
-    fn parent(&self, code: &str) -> Result<Option<Code>, Error>;
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the code is not found or hierarchy traversal fails.
+    fn parent(&self, code: &str) -> Result<Option<Code>, MedCodeError>;
 
     /// Get all immediate children of a code.
-    fn children(&self, code: &str) -> Result<Vec<Code>, Error>;
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the code is not found or hierarchy traversal fails.
+    fn children(&self, code: &str) -> Result<Vec<Code>, MedCodeError>;
 }
 
 /// Trait for cross-system code mapping.
 pub trait CrossMap {
     /// Map a code from one system to another.
-    fn map(&self, code: &str, target_system: System) -> Result<Vec<Code>, Error>;
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the code cannot be mapped to the target system.
+    fn map(&self, code: &str, target_system: System) -> Result<Vec<Code>, MedCodeError>;
 
     /// Get the source system of this mapper.
     fn source_system(&self) -> System;
@@ -128,29 +166,78 @@ pub trait CrossMap {
 }
 
 /// Errors that can occur when working with medical codes.
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("Code not found: {code} in {system}")]
-    NotFound { code: String, system: System },
-
-    #[error("Invalid code format: {code} for {system}")]
-    InvalidFormat { code: String, system: System },
-
-    #[error("No mapping found: {code} from {source_system} to {target_system}")]
-    NoMapping {
+#[derive(Debug, thiserror::Error)]
+pub enum MedCodeError {
+    /// Code not found in the specified system.
+    NotFound {
+        /// The code that was not found
         code: String,
+        /// The system where the code was searched
+        system: System,
+    },
+
+    /// Invalid code format for the specified system.
+    InvalidFormat {
+        /// The code with invalid format
+        code: String,
+        /// The system where the format is invalid
+        system: System,
+    },
+
+    /// No mapping found between systems.
+    NoMapping {
+        /// The code that could not be mapped
+        code: String,
+        /// The source system
         source_system: System,
+        /// The target system
         target_system: System,
     },
 
-    #[error("Hierarchy error: {message}")]
-    Hierarchy { message: String },
+    /// Hierarchy traversal error.
+    Hierarchy {
+        /// Error message describing the hierarchy issue
+        message: String,
+    },
 
-    #[error("Data error: {message}")]
-    Data { message: String },
+    /// Data processing error.
+    Data {
+        /// Error message describing the data issue
+        message: String,
+    },
 }
 
-impl Error {
+impl Display for MedCodeError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NotFound { code, system } => {
+                write!(f, "Code not found: `{code}` in `{system}`")
+            }
+            Self::InvalidFormat { code, system } => {
+                write!(f, "Invalid code format: `{code}` for `{system}`")
+            }
+            Self::NoMapping {
+                code,
+                source_system,
+                target_system,
+            } => {
+                write!(
+                    f,
+                    "No mapping found: `{code}` from `{source_system}` to `{target_system}`"
+                )
+            }
+            Self::Hierarchy { message } => {
+                write!(f, "Hierarchy error: `{message}`")
+            }
+            Self::Data { message } => {
+                write!(f, "Data error: `{message}`")
+            }
+        }
+    }
+}
+
+impl MedCodeError {
+    /// Create a new `NotFound` error.
     pub fn not_found(code: impl Into<String>, system: System) -> Self {
         Self::NotFound {
             code: code.into(),
@@ -158,6 +245,7 @@ impl Error {
         }
     }
 
+    /// Create a new `InvalidFormat` error.
     pub fn invalid_format(code: impl Into<String>, system: System) -> Self {
         Self::InvalidFormat {
             code: code.into(),
@@ -165,6 +253,7 @@ impl Error {
         }
     }
 
+    /// Create a new `NoMapping` error.
     pub fn no_mapping(code: impl Into<String>, source: System, target: System) -> Self {
         Self::NoMapping {
             code: code.into(),
@@ -173,12 +262,14 @@ impl Error {
         }
     }
 
+    /// Create a new Hierarchy error.
     pub fn hierarchy(message: impl Into<String>) -> Self {
         Self::Hierarchy {
             message: message.into(),
         }
     }
 
+    /// Create a new Data error.
     pub fn data(message: impl Into<String>) -> Self {
         Self::Data {
             message: message.into(),
