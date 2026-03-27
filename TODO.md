@@ -344,8 +344,8 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
   - [x] `CrossMap` trait (map, source_system, target_system)
   - [x] `Error` type via `thiserror`
 - [x] **ICD-10-CM implementation**
-  - [ ] Download and process CMS FY2025 ICD-10-CM code table
-  - [ ] `build.rs` pipeline: TSV source data → `phf::Map` source generation
+  - [x] Download and process CMS FY2025 ICD-10-CM code table
+  - [x] `build.rs` pipeline: TSV source data → `phf::Map` source generation
   - [x] `Icd10Cm::lookup(code) → Result<Code>`
   - [x] `Icd10Cm::is_valid(code) → bool`
   - [x] `Icd10Cm::normalize(code) → String` (strip dots, uppercase)
