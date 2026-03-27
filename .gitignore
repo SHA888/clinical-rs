@@ -9,6 +9,7 @@ Cargo.lock
 *.arrow
 *.ipc
 *.csv.gz
+*.zip
 
 # IDE
 .vscode/
