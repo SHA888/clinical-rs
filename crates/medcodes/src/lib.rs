@@ -7,4 +7,8 @@
 //! - Cross-system code mapping capabilities
 //! - Efficient lookup using compile-time hash maps
 
+pub mod types;
 pub mod icd10;
+
+pub use types::{Code, CodeSystem, CrossMap, Error, System};
+pub use icd10::Icd10Cm;

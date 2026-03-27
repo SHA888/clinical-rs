@@ -337,12 +337,12 @@ All of the following must pass on a fresh `git clone`:
 
 Core ontology engine with ICD-10-CM and the first cross-mapping. First crate published to crates.io.
 
-- [ ] **Core types**
-  - [ ] `System` enum (ICD9CM, ICD10CM, ICD10PCS, ATC, NDC, LOINC, SNOMED, RxNorm, CCS, CCSR, CPT)
-  - [ ] `Code` struct (system, code, description)
-  - [ ] `CodeSystem` trait (lookup, ancestors, descendants, is_valid, normalize)
-  - [ ] `CrossMap` trait (map, source_system, target_system)
-  - [ ] `Error` type via `thiserror`
+- [x] **Core types**
+  - [x] `System` enum (ICD9CM, ICD10CM, ICD10PCS, ATC, NDC, LOINC, SNOMED, RxNorm, CCS, CCSR, CPT)
+  - [x] `Code` struct (system, code, description)
+  - [x] `CodeSystem` trait (lookup, ancestors, descendants, is_valid, normalize)
+  - [x] `CrossMap` trait (map, source_system, target_system)
+  - [x] `Error` type via `thiserror`
 - [ ] **ICD-10-CM implementation**
   - [ ] Download and process CMS FY2025 ICD-10-CM code table
   - [ ] `build.rs` pipeline: TSV source data → `phf::Map` source generation

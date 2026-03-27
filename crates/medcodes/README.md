@@ -10,7 +10,10 @@ Medical code ontologies, hierarchy traversal, and cross-system mapping.
 ## Usage
 
 ```rust
-use medcodes::icd10::ICD10CM;
+use medcodes::icd10::Icd10Cm;
+
+let icd10 = Icd10Cm::new();
+assert_eq!(icd10.normalize("I10.9"), "I109");
 ```
 
 ## License
