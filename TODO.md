@@ -351,10 +351,10 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
   - [x] `Icd10Cm::normalize(code) → String` (strip dots, uppercase)
   - [x] Hierarchy traversal: `ancestors()`, `descendants()`, `parent()`, `children()`
   - [x] Feature flag: `icd10cm` (enabled by default)
-- [ ] **CCS/CCSR cross-mapping**
-  - [ ] Download and process AHRQ CCSR v2024.1 mapping files
-  - [ ] `CrossMap::icd10cm_to_ccsr() → impl CrossMap`
-  - [ ] Bidirectional lookup support
+- [x] **CCS/CCSR cross-mapping**
+  - [x] Download and process AHRQ CCSR v2024.1 & CCSR v2026.1 mapping files
+  - [x] `CrossMap::icd10cm_to_ccsr() → impl CrossMap`
+  - [x] Bidirectional lookup support
 - [ ] **Tests**
   - [ ] Unit tests for every public method
   - [ ] Known-answer tests against CMS reference data (≥50 code lookups verified)

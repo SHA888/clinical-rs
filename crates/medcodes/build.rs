@@ -1,4 +1,4 @@
-//! Build script for medcodes crate - generates ICD-10-CM data from CMS XML files
+//! Build script for medcodes crate - generates ICD-10-CM and CCSR data
 
 #![allow(clippy::expect_used)]
 #![allow(clippy::panic)]
@@ -13,15 +13,17 @@ use std::path::Path;
 
 fn main() {
     println!("cargo:rerun-if-changed=data/april-1-2026-code-tables-tabular-and-index.zip");
+    println!("cargo:rerun-if-changed=data/DXCCSR-v2026-1.zip");
 
-    let data_path = concat!(
+    // Generate ICD-10-CM data
+    let icd10_data_path = concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/data/Table and Index/icd10cm_tabular_2026.xml"
     );
 
-    if Path::new(data_path).exists() {
-        eprintln!("Found CMS data file at {data_path}");
-        match parse_cms_xml(data_path) {
+    if Path::new(icd10_data_path).exists() {
+        eprintln!("Found CMS data file at {icd10_data_path}");
+        match parse_cms_xml(icd10_data_path) {
             Ok((codes, parents, children)) => {
                 eprintln!("Successfully parsed CMS data, generating maps...");
                 generate_phf_maps(&codes, &parents, &children);
@@ -33,9 +35,31 @@ fn main() {
             }
         }
     } else {
-        eprintln!("Warning: CMS data file not found at {data_path}");
+        eprintln!("Warning: CMS data file not found at {icd10_data_path}");
         eprintln!("Extract the ZIP file to populate ICD-10-CM codes.");
         generate_empty_maps();
+    }
+
+    // Generate CCSR mapping data
+    let ccsr_csv_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/DXCCSR_v2026-1.csv");
+
+    if Path::new(ccsr_csv_path).exists() {
+        eprintln!("Found CCSR data file at {ccsr_csv_path}");
+        match parse_ccsr_csv(ccsr_csv_path) {
+            Ok(mappings) => {
+                eprintln!("Successfully parsed CCSR data, generating mappings...");
+                generate_ccsr_maps(&mappings);
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to parse CCSR CSV: {e}");
+                eprintln!("Using empty CCSR maps.");
+                generate_empty_ccsr_maps();
+            }
+        }
+    } else {
+        eprintln!("Warning: CCSR data file not found at {ccsr_csv_path}");
+        eprintln!("Extract the CCSR ZIP file to populate CCSR mappings.");
+        generate_empty_ccsr_maps();
     }
 }
 
@@ -205,4 +229,199 @@ fn generate_phf_maps(
         panic!("Failed to write ICD-10-CM data: {e}");
     }
     eprintln!("Generated ICD-10-CM data at {}", out_path.display());
+}
+
+// CCSR data structures and parsing
+
+#[derive(Debug, Clone)]
+struct CcsrCodeMapping {
+    icd10_code: String,
+    categories: Vec<ParsedCcsrCategory>,
+}
+
+#[derive(Debug, Clone)]
+struct ParsedCcsrCategory {
+    code: String,
+    description: String,
+    is_default_ip: bool,
+    is_default_ed: bool,
+    is_default_op: bool,
+}
+
+fn parse_ccsr_csv(path: &str) -> Result<Vec<CcsrCodeMapping>, Box<dyn std::error::Error>> {
+    let mut reader = csv::Reader::from_path(path)?;
+    let mut mappings: HashMap<String, CcsrCodeMapping> = HashMap::new();
+
+    for result in reader.records() {
+        let record = result?;
+
+        // Parse ICD-10-CM code (column 0)
+        let icd10_code = record
+            .get(0)
+            .ok_or("Missing ICD-10-CM code")?
+            .trim()
+            .to_uppercase();
+
+        if icd10_code.is_empty() {
+            continue;
+        }
+
+        // Parse default categories for different contexts
+        let default_inpatient = record.get(2).unwrap_or("").trim();
+        let default_ed = record.get(4).unwrap_or("").trim();
+        let default_outpatient = record.get(6).unwrap_or("").trim();
+
+        // Parse all CCSR categories (up to 6)
+        let mut categories = Vec::new();
+        for i in 0..6 {
+            let cat_col = 8 + i * 2; // Categories start at column 8
+            let desc_col = cat_col + 1;
+
+            if let Some(cat_code) = record.get(cat_col) {
+                let cat_code = cat_code.trim();
+                if !cat_code.is_empty() && cat_code != "' '" {
+                    let description = record.get(desc_col).unwrap_or("").trim().to_string();
+
+                    let is_default_inpatient = default_inpatient == cat_code;
+                    let is_default_ed = default_ed == cat_code;
+                    let is_default_outpatient = default_outpatient == cat_code;
+
+                    categories.push(ParsedCcsrCategory {
+                        code: cat_code.replace('\'', ""),
+                        description,
+                        is_default_ip: is_default_inpatient,
+                        is_default_ed,
+                        is_default_op: is_default_outpatient,
+                    });
+                }
+            }
+        }
+
+        if !categories.is_empty() {
+            let _ = mappings.insert(
+                icd10_code.clone(),
+                CcsrCodeMapping {
+                    icd10_code,
+                    categories,
+                },
+            );
+        }
+    }
+
+    let result: Vec<CcsrCodeMapping> = mappings.into_values().collect();
+    eprintln!("Parsed {} ICD-10-CM to CCSR mappings", result.len());
+    Ok(result)
+}
+
+fn generate_empty_ccsr_maps() {
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR must be set");
+    let out_path = std::path::Path::new(&out_dir).join("ccsr_data.rs");
+
+    let empty_code = r"
+// Generated by build.rs - empty CCSR maps
+use phf::phf_map;
+
+/// ICD-10-CM to CCSR mappings (empty - data not loaded)
+pub static ICD10CM_TO_CCSR_MAPPINGS: phf::Map<&'static str, &'static [CcsrMapping]> = phf_map! {};
+/// CCSR to ICD-10-CM reverse mappings (empty - data not loaded)
+pub static CCSR_TO_ICD10CM_MAPPINGS: phf::Map<&'static str, &'static [&'static str]> = phf_map! {};
+";
+
+    if let Err(e) = std::fs::write(&out_path, empty_code) {
+        panic!("Failed to write empty CCSR maps: {e}");
+    }
+    eprintln!("Generated empty CCSR maps at {}", out_path.display());
+}
+
+fn generate_ccsr_maps(mappings: &[CcsrCodeMapping]) {
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR must be set");
+    let out_path = std::path::Path::new(&out_dir).join("ccsr_data.rs");
+
+    let mut output = String::new();
+    output.push_str("// Generated by build.rs from AHRQ CCSR data\n\n");
+    output.push_str("use phf::phf_map;\n\n");
+
+    // Generate all CCSR mappings as a single large static array
+    output.push_str("static CCSR_MAPPINGS: &[crate::ccsr::CcsrMapping] = &[\n");
+
+    for mapping in mappings {
+        for cat in &mapping.categories {
+            let _ = writeln!(
+                output,
+                "    crate::ccsr::CcsrMapping {{\n        category_code: \"{}\",\n        category_description: \"{}\",\n        is_default_ip: {},\n        is_default_ed: {},\n        is_default_op: {},\n    }},",
+                cat.code.replace('"', "\\\""),
+                cat.description.replace('"', "\\\""),
+                cat.is_default_ip,
+                cat.is_default_ed,
+                cat.is_default_op
+            );
+        }
+    }
+
+    output.push_str("];\n\n");
+
+    // Generate index map for ICD-10-CM -> CCSR
+    output.push_str("/// ICD-10-CM to CCSR mappings\n");
+    output.push_str("/// Maps normalized ICD-10-CM codes to indices in `CCSR_MAPPINGS` array\n");
+    output.push_str("pub static ICD10CM_TO_CCSR_MAPPINGS: phf::Map<&'static str, &'static [usize]> = phf_map! {\n");
+
+    let mut current_index = 0;
+    for mapping in mappings {
+        let count = mapping.categories.len();
+        if count > 0 {
+            let indices: Vec<String> = (current_index..current_index + count)
+                .map(|i| i.to_string())
+                .collect();
+            let _ = writeln!(
+                output,
+                "    \"{}\" => &[{}],",
+                mapping.icd10_code,
+                indices.join(", ")
+            );
+            current_index += count;
+        }
+    }
+
+    output.push_str("};\n\n");
+
+    // Generate reverse mapping (CCSR -> ICD-10-CM)
+    let mut reverse_mappings: HashMap<String, Vec<String>> = HashMap::new();
+    for mapping in mappings {
+        for cat in &mapping.categories {
+            reverse_mappings
+                .entry(cat.code.clone())
+                .or_insert_with(Vec::new)
+                .push(mapping.icd10_code.clone());
+        }
+    }
+
+    // Sort and deduplicate ICD-10-CM codes for each CCSR category
+    for icd10_codes in reverse_mappings.values_mut() {
+        icd10_codes.sort();
+        icd10_codes.dedup();
+    }
+
+    output.push_str("/// CCSR to ICD-10-CM reverse mappings\n");
+    output.push_str("/// Maps CCSR categories to their ICD-10-CM codes\n");
+    output.push_str("pub static CCSR_TO_ICD10CM_MAPPINGS: phf::Map<&'static str, &'static [&'static str]> = phf_map! {\n");
+
+    for (ccsr_code, icd10_codes) in &reverse_mappings {
+        let icd10_str = icd10_codes
+            .iter()
+            .map(|code| format!("\"{code}\""))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let _ = writeln!(output, "    \"{ccsr_code}\" => &[{icd10_str}],");
+    }
+
+    output.push_str("};\n");
+
+    if let Err(e) = std::fs::write(&out_path, output) {
+        panic!("Failed to write CCSR data: {e}");
+    }
+    eprintln!(
+        "Generated CCSR data at {} with {} mappings",
+        out_path.display(),
+        mappings.len()
+    );
 }
