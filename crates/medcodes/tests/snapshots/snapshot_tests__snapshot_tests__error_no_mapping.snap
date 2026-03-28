@@ -1,0 +1,9 @@
+---
+source: crates/medcodes/tests/snapshot_tests.rs
+expression: "&no_mapping"
+---
+NoMapping {
+    code: "I109",
+    source_system: Icd10Cm,
+    target_system: Ccsr,
+}

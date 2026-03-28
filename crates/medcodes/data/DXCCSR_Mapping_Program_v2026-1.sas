@@ -53,7 +53,7 @@
 /*******************************************************************/
 
 /*******************************************************************/
-/*      THE SAS MACRO FLAGS BELOW MUST BE UPDATED BY THE USER      */ 
+/*      THE SAS MACRO FLAGS BELOW MUST BE UPDATED BY THE USER      */
 /*  These macro variables must be set to define the locations,     */
 /*  names, and characteristics of your input and output SAS        */
 /*  formatted data.                                                */
@@ -70,14 +70,14 @@ LIBNAME  OUT1    'c:\sasdata\';                                   * Location of 
 /*       SPECIFY TYPE OF INPUT DATA           */
 /**********************************************/
 * Specify the type of input data with one of the
-  following 2-character values: IP for inpatient 
+  following 2-character values: IP for inpatient
   only, OP for outpatient only, and IO for data
-  files that are a mixture of inpatient and 
+  files that are a mixture of inpatient and
   outpatient records;                                       %LET DBTYPE=IP;         *<=== USER MUST MODIFY;
 
-* Specify the name of the SAS variable that can 
-  be used to distinguish inpatient from outpatient 
-  records in a mixed file. In this example the 
+* Specify the name of the SAS variable that can
+  be used to distinguish inpatient from outpatient
+  records in a mixed file. In this example the
   variable is DBVARNAME;                                    %LET IOVAR=DBVARNAME;      *<=== USER MUST MODIFY;
 
 * Specify the data value to identify inpatient
@@ -85,28 +85,28 @@ LIBNAME  OUT1    'c:\sasdata\';                                   * Location of 
 
 * Specify the data value to identify outpatient
   records;                                                  %LET IOVALO=OP;         *<=== USER MUST MODIFY;
-											  
+
 /*********************************************/
 /*   SPECIFY INPUT FILE CHARACTERISTICS      */
-/*********************************************/ 
-* Specify the unique record identifier on the input 
-  SAS file that can be used to link information back to 
-  original input SAS data file;                             %LET RECID=KEY;        *<=== USER MUST MODIFY; 
+/*********************************************/
+* Specify the unique record identifier on the input
+  SAS file that can be used to link information back to
+  original input SAS data file;                             %LET RECID=KEY;        *<=== USER MUST MODIFY;
 
 * Specify the prefix used to name the ICD-10-CM
   diagnosis data element array in the input dataset.
-  In this example the diagnosis data elements would be 
-  named I10_DX1, I10_DX2, etc., similar to the naming 
+  In this example the diagnosis data elements would be
+  named I10_DX1, I10_DX2, etc., similar to the naming
   of ICD-10-CM data elements in HCUP databases;             %LET DXPREFIX=I10_DX;  *<=== USER MUST MODIFY;
 
 * Specify the maximum number of diagnosis codes
   on any record in the input file. ;                        %LET NUMDX =40;       *<=== USER MUST MODIFY;
 
-* Specify the name of the variable that contains a 
-  count of the ICD-10-CM codes reported on a record.  
+* Specify the name of the variable that contains a
+  count of the ICD-10-CM codes reported on a record.
   If no such variable exists, leave macro blank;            %LET NDXVAR=I10_NDX;   *<=== USER MUST MODIFY;
 
-* Specify the number of observations to use from the 
+* Specify the number of observations to use from the
   input dataset.  Use MAX to use all observations and
   use a smaller value for testing the program;              %LET OBS = MAX;        *<=== USER MAY MODIFY;
 
@@ -121,13 +121,13 @@ LIBNAME  OUT1    'c:\sasdata\';                                   * Location of 
 /*   SPECIFY INPUT and OUTPUT FILE NAMES      */
 /**********************************************/
 * Input SAS file member name;                 %LET CORE=INPUT_SAS_FILE;             *<=== USER MUST MODIFY;
-* Output SAS file name, vertical;             %LET VERTFILE=OUTPUT_VERT_FILE_NAME;  *<=== USER MUST MODIFY; 
+* Output SAS file name, vertical;             %LET VERTFILE=OUTPUT_VERT_FILE_NAME;  *<=== USER MUST MODIFY;
 * Output SAS file name, horizontal;           %LET HORZFILE=OUTPUT_HORZ_FILE_NAME;  *<=== USER MUST MODIFY;
 * Output SAS file name, default DXCCSR;       %LET DFLTFILE=OUTPUT_DFLT_FILE_NAME;  *<=== USER MUST MODIFY;
 
 /*********************************************/
 /*   SET CCSR VERSION                        */
-/*********************************************/ 
+/*********************************************/
 %LET DXCCSR_VERSION = "2026.1" ; *<=== DO NOT MODIFY;
 
 
@@ -164,7 +164,7 @@ DATA DXCCSR;
     ;
 
    RETAIN HLO " " FMTNAME "$DXCCSR" TYPE  "J" ;
-   
+
    LABEL = CATX("#", OF I10CCSR1-I10CCSR6, OF I10CCSRLabel1-I10CCSRLabel6) ;
    OUTPUT;
 
@@ -185,7 +185,7 @@ DATA DXCCSRL(KEEP=START LABEL FMTNAME TYPE HLO);
   RETAIN HLO " " FMTNAME "$DXCCSRL" TYPE  "J" ;
 
   ARRAY CCSRC(&CCSRN_) I10CCSR1-I10CCSR&CCSRN_;
-  ARRAY CCSRL(&CCSRN_) I10CCSRLabel1-I10CCSRLabel&CCSRN_;  
+  ARRAY CCSRL(&CCSRN_) I10CCSRLabel1-I10CCSRLabel&CCSRN_;
 
   LENGTH START $6 LABEL $228;
   DO I=1 to &CCSRN_;
@@ -204,8 +204,8 @@ DATA DXCCSRL(KEEP=START LABEL FMTNAME TYPE HLO);
   END;
 run;
 
-PROC SORT DATA=DXCCSRL NODUPKEY; 
-  BY START; 
+PROC SORT DATA=DXCCSRL NODUPKEY;
+  BY START;
 RUN;
 
 PROC FORMAT LIB=WORK CNTLIN = DXCCSRL;
@@ -252,11 +252,11 @@ RUN;
 /*  in Section 1 and the diagnosis codes in your SAS dataset.                    */
 /*  At most three separate output files are created plus a few intermediate files*/
 /*  for the construction of the horizontal and default DXCCSR for DX1 file       */
-/*********************************************************************************/  
+/*********************************************************************************/
 
 %Macro dxccsr_vt(dbt=IP);
-   DATA &dbt._out_vt (KEEP=&RECID DXCCSR DX_POSITION DEFAULT_DXCCSR DXCCSR_VERSION) 
-        dxccsr_flags  (keep=&RECID flag_anydx flag_xxx flag_dx1)    
+   DATA &dbt._out_vt (KEEP=&RECID DXCCSR DX_POSITION DEFAULT_DXCCSR DXCCSR_VERSION)
+        dxccsr_flags  (keep=&RECID flag_anydx flag_xxx flag_dx1)
      ;
 	 retain &RECID;
      LENGTH ICD10_Code $7 DXCCSR $6 DX_POSITION 3 DEFAULT_DXCCSR $1 DXCCSR_VERSION $6 flag_xxx $6;
@@ -273,7 +273,7 @@ RUN;
 
      %if &NDXVAR ne %then %let MAXNDX = &NDXVAR;
      %else %let MAXNDX=&NUMDX;
- 
+
      flag_anydx =0; &dbt.flag_xxx=''; flag_dx1=0;
 	 if not missing(&DXPREFIX.1) then flag_dx1=1;
 
@@ -284,7 +284,7 @@ RUN;
 
        if ICD10_CODE ^= '' then flag_anydx=1;
 
-       CCSRString=INPUT(A_DX(I), $DXCCSR.); 
+       CCSRString=INPUT(A_DX(I), $DXCCSR.);
        if not missing(ICD10_CODE) and missing(CCSRString) then do;
 	      ***invalid diagnosis found;
 		  DXCCSR='InvlDX';
@@ -295,7 +295,7 @@ RUN;
        else if not missing(CCSRString) then do;
           ccsrn=(COUNTC(CCSRString,'#')+1)/2;
 	      if ccsrn=1 then do;
-             next_delim = findc(CCSRString,"#"); 
+             next_delim = findc(CCSRString,"#");
 	         DXCCSR=substr(CCSRString,1, next_delim-1);
 
              if I=1 then do;
@@ -303,16 +303,16 @@ RUN;
 	    		else if Default_DCCSR_Val =: 'XXX' then do;
             	  DEFAULT_DXCCSR = 'X';
 				  flag_xxx=Default_DCCSR_Val;
-				end;			
+				end;
 		    	else DEFAULT_DXCCSR = 'N';
 			 end;
 			 else DEFAULT_DXCCSR = '';
-			 
+
 	         output &dbt._out_vt;
 	      end;
 	      else do;
 	       do j=1 to ccsrn;
-             next_delim = findc(CCSRString,"#"); 
+             next_delim = findc(CCSRString,"#");
              DXCCSR=substr(CCSRString,1, next_delim-1);
              CCSRString=substr(CCSRString,next_delim+1);
 
@@ -321,27 +321,27 @@ RUN;
 			    else if Default_DCCSR_Val =: 'XXX' then do;
 				  DEFAULT_DXCCSR = 'X';
   				  flag_xxx=Default_DCCSR_Val;
-				end;  
+				end;
 			    else DEFAULT_DXCCSR = 'N';
 			 end;
 			 else DEFAULT_DXCCSR = '';
-			 
+
 	         output &dbt._out_vt;
-	       end; 
+	       end;
 	       do j=1 to ccsrn-1;
-             next_delim = findc(CCSRString,"#"); 
+             next_delim = findc(CCSRString,"#");
 	         CCSRString=substr(CCSRString,next_delim+1);
 	       end; /*do j*/
 	      end; /*else do*/
        end; /*not missing CCSString*/
      end; /*loop i*/
-	 
-	 output dxccsr_flags; 
+
+	 output dxccsr_flags;
 run;
 
 /*If DX1 is missing add it to the vertical file*/
 data &dbt._out_vt;
-  merge &dbt._out_vt(in=inv) 
+  merge &dbt._out_vt(in=inv)
         dxccsr_flags(in=inf keep=&RECID flag_dx1)
 		;
   by &RECID;
@@ -351,7 +351,7 @@ data &dbt._out_vt;
     DEFAULT_DXCCSR='X';
 	DXCCSR_VERSION=&DXCCSR_VERSION;
 	output;
-  end;  
+  end;
   else if flag_dx1=0 then do;
     output;
     ***there may be multiple diagnosis on vertical file, output NoDX1 only once;
@@ -361,13 +361,13 @@ data &dbt._out_vt;
       DEFAULT_DXCCSR='X';
 	  output;
 	end;
-  end; 
-  else output;  
+  end;
+  else output;
   drop flag_dx1;
 run;
 
 proc sort data=&dbt._out_vt; by &RECID DX_POSITION; run;
-		
+
 Title1 "Vertical file";
 proc contents data=&dbt._out_vt varnum;
 run;
@@ -376,9 +376,9 @@ proc print data=&dbt._out_vt (obs=10);
 run;
 %mend;
 
-* =========================================================================== * 
-* Count maximum number of DXCCSR values for each body system. 
-* Please do not change this code. It is necessary to the program function.  
+* =========================================================================== *
+* Count maximum number of DXCCSR values for each body system.
+* Please do not change this code. It is necessary to the program function.
 * =========================================================================== *;
 %macro count_ccsr;
   DATA Body_sys;
@@ -424,35 +424,35 @@ run;
    proc sql noprint;
      select distinct body into :body_ separated by ' '
      from body_max
-     ; 
+     ;
    quit;
    data null;
      set body_max end=eof;
-     if eof then call symput("mnbody", put(_N_, 2.)); 
-   run; 
+     if eof then call symput("mnbody", put(_N_, 2.));
+   run;
 
    %do i=1 %to &mnbody;
      %let b=%scan(&body_, &i);
      %global max&b. ;
-   %end;  
+   %end;
 
    data null;
      set body_max end=eof;
-     mbody="max" || body; 
-     call symput(mbody, bnum); 
-     if eof then call symput("mnbody", put(_N_, 2.)); 
-   run; 
+     mbody="max" || body;
+     call symput(mbody, bnum);
+     if eof then call symput("mnbody", put(_N_, 2.));
+   run;
 
    %put verify macro definition:;
    %put mnbody=&mnbody;
    %do i=1 %to &mnbody;
      %let b=%scan(&body_, &i);
      %put max&b._ = &&&max&b;
-   %end;  
+   %end;
 %mend;
 
 %macro dxccsr_hz(dbt=IP);
-* =========================================================================== * 
+* =========================================================================== *
 * Create horizontal file layout using vertical file                           *
 * =========================================================================== *;
 Data DXCCSR_First(keep=&RECID DXCCSR) DXCCSR_second(keep=&RECID DXCCSR);
@@ -479,26 +479,26 @@ data DXCCSR;
   else DX_Position = 2;
 run;
 
-proc transpose data=DXCCSR out=DXCCSR_Transposed(drop=_NAME_) prefix=DXCCSR_; 
+proc transpose data=DXCCSR out=DXCCSR_Transposed(drop=_NAME_) prefix=DXCCSR_;
   by &RECID;
   ID DXCCSR;
   Var DX_Position;
-run; 
+run;
 
-**** Some input records may not have any diagnosis codes or only invalid diagnosis codes 
+**** Some input records may not have any diagnosis codes or only invalid diagnosis codes
      and not be represented in the vertical file.
      Ensure the horizontal output file has the same number of records as input file;
 data &dbt._out_hz ;
-  retain &RECID; 
+  retain &RECID;
   LENGTH DXCCSR_Default_DX1 $6;
   LENGTH
-    %do i=1 %to &mnbody; 
+    %do i=1 %to &mnbody;
       %let b=%scan(&body_, &i);
-      DXCCSR_&b.001-DXCCSR_&b.&&max&b. 
+      DXCCSR_&b.001-DXCCSR_&b.&&max&b.
     %end;
     3 ;
   Label
-    %do i=1 %to &mnbody; 
+    %do i=1 %to &mnbody;
       %let b=%scan(&body_, &i);
 	  %do j=1 %to &&max&b.;
 	     %if &j < 10 %then DXCCSR_&b.00&j = "Indication that at least one ICD-10-CM diagnosis on the record is included in CCSR &b.00&j" ;
@@ -528,14 +528,14 @@ run;
 %mend;
 
 %macro dxccsr_dflt(dbt=IP);
-* ================================================================================= * 
+* ================================================================================= *
 * Create the default CCSR file with RECID & Default DXCCSR value using vertical file*
 * ================================================================================= *;
 data &dbt._dflt_file(keep=&RECID DXCCSR_DEFAULT_DX1);
   length DXCCSR_DEFAULT_DX1 $6;
   set &dbt._out_vt(keep=&RECID DX_POSITION DXCCSR DEFAULT_DXCCSR);
   by &RECID;
-  
+
   if DX_POSITION = 1 and DEFAULT_DXCCSR in ('Y');
   DXCCSR_DEFAULT_DX1 = DXCCSR;
 run;
@@ -547,19 +547,19 @@ Data &dbt._dflt_file;
   label DXCCSR_DEFAULT_DX1 = "Default CCSR for principal/first-listed ICD-10-CM diagnosis"
         DXCCSR_VERSION = "Version of CCSR for ICD-10-CM diagnoses"
         ;
-  merge dxccsr_flags(in=ini) 
+  merge dxccsr_flags(in=ini)
 		&dbt._dflt_file(in=ino) ;
-  by &RECID;  
+  by &RECID;
   retain DXCCSR_VERSION &DXCCSR_VERSION;
-  
+
   if not ini then abort;
   if not ino then do;
 	if not flag_dx1 then DXCCSR_DEFAULT_DX1 = 'NoDX1';
     else if flag_xxx ^='' then DXCCSR_DEFAULT_DX1 = flag_xxx;
 	else if flag_anydx then DXCCSR_DEFAULT_DX1 = 'InvlDX';
   end;
-  drop flag_anydx flag_xxx flag_dx1;  
-run;  
+  drop flag_anydx flag_xxx flag_dx1;
+run;
 
 %mend;
 
@@ -574,8 +574,8 @@ run;
 		 if &IOVAR = "&IOValI" then output IP_in;
 		 else if &IOVAR = "&IOValO" then output OP_in;
 		 else output NIO;
-	   run;	 
-		 
+	   run;
+
        %dxccsr_vt(dbt=IP);
        %dxccsr_dflt(dbt=IP);
        %dxccsr_vt(dbt=OP);
@@ -584,13 +584,13 @@ run;
 	   data OUT1.&VERTFILE(SortedBy=&RECID);
 	     set IP_out_vt OP_out_vt;
 	     by &RECID;
-	   run;  
+	   run;
 	   %end;
        %if &dflt = 1 %then %do;
          data OUT1.&DFLTFILE(SortedBy=&RECID);
 	       set IP_dflt_file OP_dflt_file NIO(keep=&RECID);
 		   by &RECID;
-	     run;	
+	     run;
 
          Title1 "Default DXCCSR file";
          proc contents data=OUT1.&DFLTFILE;
@@ -599,37 +599,37 @@ run;
          proc print data=OUT1.&DFLTFILE(obs=10);
          run;
        %end;
-       %if &horz = 1 %then %do; 
+       %if &horz = 1 %then %do;
          %dxccsr_hz(dbt=IP);
          %dxccsr_hz(dbt=OP);
 		 data out1.&HORZFILE(SortedBy=&RECID);
 	     set IP_out_hz OP_out_hz NIO(keep=&RECID);
 		 by &RECID;
-	   run;	 
+	   run;
 
        %end;
      %end;
-     %else ERROR 'IOVAR is not specified';	 
+     %else ERROR 'IOVAR is not specified';
    %end;
    %else %if %upcase(&DBTYPE) = IP %then %do;
      data IP_in;
 	     set &CORE.Skinny;
 		 by &RECID;
      run;
-	 
+
      %dxccsr_vt(dbt=IP);
      %if &vert = 1 %then %do;
 	 data OUT1.&VERTFILE(SortedBy=&RECID);
 	   set IP_out_vt;
 	   by &RECID;
-	 run;  
+	 run;
 	 %end;
      %dxccsr_dflt(dbt=IP);
      %if &dflt = 1 %then %do;
        data OUT1.&DFLTFILE(SortedBy=&RECID);
 	     set IP_dflt_file;
 		 by &RECID;
-	   run;	
+	   run;
 
        Title1 "Default DXCCSR file";
        proc contents data=OUT1.&DFLTFILE;
@@ -638,12 +638,12 @@ run;
        proc print data=OUT1.&DFLTFILE(obs=10);
        run;
      %end;
-     %if &horz = 1 %then %do; 
+     %if &horz = 1 %then %do;
        %dxccsr_hz(dbt=IP);
    	   data out1.&HORZFILE(SortedBy=&RECID);
 	     set IP_out_hz;
 		 by &RECID;
-	   run;	 
+	   run;
      %end;
    %end;
    %else %if %upcase(&DBTYPE) = OP %then %do;
@@ -651,20 +651,20 @@ run;
 	     set &CORE.Skinny;
 		 by &RECID;
      run;
-  
+
      %dxccsr_vt(dbt=OP);
-     %if &vert = 1 %then %do; 
+     %if &vert = 1 %then %do;
 	 data OUT1.&VERTFILE(SortedBy=&RECID);
 	   set OP_out_vt;
 	   by &RECID;
-	 run;  
+	 run;
 	 %end;
      %dxccsr_dflt(dbt=OP);
      %if &dflt = 1 %then %do;
        data OUT1.&DFLTFILE(SortedBy=&RECID);
 	     set OP_dflt_file;
 		 by &RECID;
-	   run;	
+	   run;
 
        Title1 "Default DXCCSR file";
        proc contents data=OUT1.&DFLTFILE;
@@ -673,15 +673,14 @@ run;
        proc print data=OUT1.&DFLTFILE(obs=10);
        run;
      %end;
-     %if &horz = 1 %then %do; 
+     %if &horz = 1 %then %do;
        %dxccsr_hz(dbt=OP);
    	   data out1.&HORZFILE(SortedBy=&RECID);
 	     set OP_out_hz;
 		 by &RECID;
-	   run;	 
+	   run;
      %end;
    %end;
-   
+
 %mend;
 %main;
-

@@ -1,0 +1,7 @@
+---
+source: crates/medcodes/tests/snapshot_tests.rs
+expression: "&data"
+---
+Data {
+    message: "Failed to parse data",
+}

@@ -1,0 +1,9 @@
+---
+source: crates/medcodes/tests/snapshot_tests.rs
+expression: "&lookup_result"
+---
+Code {
+    system: Icd10Cm,
+    code: "E11.9",
+    description: "Type 2 diabetes mellitus without complications",
+}

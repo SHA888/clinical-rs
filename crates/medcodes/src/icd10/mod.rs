@@ -28,16 +28,40 @@ impl Icd10Cm {
     }
 
     /// Normalize an ICD-10-CM code.
+    ///
+    /// This function:
+    /// - Removes all whitespace (leading, trailing, and internal)
+    /// - Removes all dots
+    /// - Converts to uppercase
+    ///
+    /// Examples:
+    /// - "A00.0" -> "A000"
+    /// - " a 00 .0 " -> "A000"
+    /// - "a00.0" -> "A000"
     #[must_use]
     pub fn normalize_code(&self, code: &str) -> String {
-        let trimmed = code.trim();
-        let mut result = String::with_capacity(trimmed.len());
-        for ch in trimmed.chars() {
-            if ch != '.' {
+        let mut result = String::with_capacity(code.len());
+        for ch in code.chars() {
+            if !ch.is_ascii_whitespace() && ch != '.' {
                 result.push(ch.to_ascii_uppercase());
             }
         }
         result
+    }
+
+    /// Find the dotted form of a normalized code for description lookup.
+    ///
+    /// The description map stores codes with dots (e.g., "A00.0"), while
+    /// hierarchy operations use normalized codes (e.g., "A000"). This helper
+    /// maps from normalized back to dotted form.
+    #[must_use]
+    fn dotted_form_for_normalized(&self, normalized: &str) -> Option<&'static str> {
+        // Use iterator find for more idiomatic code
+        // TODO: Consider generating a reverse map at build time for O(1) lookup
+        self.descriptions
+            .keys()
+            .find(|&&dotted_key| self.normalize_code(dotted_key) == normalized)
+            .copied()
     }
 }
 
@@ -51,25 +75,49 @@ impl CodeSystem for Icd10Cm {
     /// Look up an ICD-10-CM code.
     fn lookup(&self, code: &str) -> Result<Code, MedCodeError> {
         let normalized = self.normalize_code(code);
-        self.descriptions.get(normalized.as_str()).map_or_else(
-            || Err(MedCodeError::not_found(code, System::Icd10Cm)),
-            |description| {
-                Ok(Code {
-                    system: System::Icd10Cm,
-                    code: normalized,
-                    description: description.to_string(),
-                })
-            },
-        )
+
+        // Try normalized form first
+        if let Some(description) = self.descriptions.get(normalized.as_str()) {
+            return Ok(Code {
+                system: System::Icd10Cm,
+                code: normalized,
+                description: description.to_string(),
+            });
+        }
+
+        // Try to find a dotted form that matches the normalized input
+        if let Some(dotted_form) = self.dotted_form_for_normalized(&normalized)
+            && let Some(description) = self.descriptions.get(dotted_form)
+        {
+            return Ok(Code {
+                system: System::Icd10Cm,
+                code: dotted_form.to_string(),
+                description: description.to_string(),
+            });
+        }
+
+        Err(MedCodeError::not_found(code, System::Icd10Cm))
     }
 
     /// Check if a code is valid in ICD-10-CM.
     fn is_valid(&self, code: &str) -> bool {
         let normalized = self.normalize_code(code);
-        self.descriptions.contains_key(normalized.as_str())
+
+        // Check normalized form first
+        if self.descriptions.contains_key(normalized.as_str()) {
+            return true;
+        }
+
+        // Check if there's a dotted form that matches the normalized input
+        self.dotted_form_for_normalized(&normalized).is_some()
     }
 
     /// Normalize a code (remove formatting, uppercase, etc.).
+    ///
+    /// This trait method delegates to `normalize_code` and has the same behavior:
+    /// - Removes all whitespace (leading, trailing, and internal)
+    /// - Removes all dots
+    /// - Converts to uppercase
     fn normalize(&self, code: &str) -> String {
         // Delegate to the inherent method with a different name
         self.normalize_code(code)
@@ -78,21 +126,36 @@ impl CodeSystem for Icd10Cm {
     /// Get all ancestors of a code in the ICD-10-CM hierarchy.
     fn ancestors(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
         let normalized = self.normalize_code(code);
-        // Validate the code exists first
-        if !self.descriptions.contains_key(normalized.as_str()) {
+        let trimmed = code.trim().to_uppercase();
+
+        // Validate the code exists first (check both formats)
+        let found_key = if self.descriptions.contains_key(normalized.as_str()) {
+            &normalized
+        } else if self.descriptions.contains_key(trimmed.as_str()) {
+            &trimmed
+        } else {
             return Err(MedCodeError::not_found(code, System::Icd10Cm));
-        }
+        };
+
+        // For hierarchy lookups, always use normalized (non-dotted) format
+        let hierarchy_key = self.normalize_code(found_key);
+
         let mut ancestors = Vec::new();
-        let mut current: String = normalized;
+        let mut current: String = hierarchy_key;
 
         while let Some(Some(parent)) = self.parents.get(current.as_str()) {
-            if let Some(description) = self.descriptions.get(parent) {
-                ancestors.push(Code {
-                    system: System::Icd10Cm,
-                    code: parent.to_string(),
-                    description: description.to_string(),
-                });
-                current = parent.to_string();
+            // Find the dotted form of the parent to get its description
+            if let Some(dotted_parent) = self.dotted_form_for_normalized(parent) {
+                if let Some(description) = self.descriptions.get(dotted_parent) {
+                    ancestors.push(Code {
+                        system: System::Icd10Cm,
+                        code: dotted_parent.to_string(),
+                        description: description.to_string(),
+                    });
+                    current = parent.to_string();
+                } else {
+                    break;
+                }
             } else {
                 break;
             }
@@ -104,12 +167,22 @@ impl CodeSystem for Icd10Cm {
     /// Get all descendants of a code in the ICD-10-CM hierarchy.
     fn descendants(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
         let normalized = self.normalize_code(code);
-        // Validate the code exists first
-        if !self.descriptions.contains_key(normalized.as_str()) {
+        let trimmed = code.trim().to_uppercase();
+
+        // Validate the code exists first (check both formats)
+        let found_key = if self.descriptions.contains_key(normalized.as_str()) {
+            &normalized
+        } else if self.descriptions.contains_key(trimmed.as_str()) {
+            &trimmed
+        } else {
             return Err(MedCodeError::not_found(code, System::Icd10Cm));
-        }
+        };
+
+        // For hierarchy lookups, always use normalized (non-dotted) format
+        let hierarchy_key = self.normalize_code(found_key);
+
         let mut descendants = Vec::new();
-        let mut to_visit = vec![normalized];
+        let mut to_visit = vec![hierarchy_key];
         let mut visited = std::collections::HashSet::new();
 
         while let Some(current) = to_visit.pop() {
@@ -125,7 +198,9 @@ impl CodeSystem for Icd10Cm {
                             code: child.to_string(),
                             description: description.to_string(),
                         });
-                        to_visit.push(child.to_string());
+                        // Normalize child for hierarchy lookup
+                        let child_normalized = self.normalize_code(child);
+                        to_visit.push(child_normalized);
                     }
                 }
             }
@@ -137,37 +212,52 @@ impl CodeSystem for Icd10Cm {
     /// Get the immediate parent of a code.
     fn parent(&self, code: &str) -> Result<Option<Code>, MedCodeError> {
         let normalized = self.normalize_code(code);
-        // Validate the code exists first
-        if !self.descriptions.contains_key(normalized.as_str()) {
+        let trimmed = code.trim().to_uppercase();
+
+        // Validate the code exists first (check both formats)
+        let found_key = if self.descriptions.contains_key(normalized.as_str()) {
+            &normalized
+        } else if self.descriptions.contains_key(trimmed.as_str()) {
+            &trimmed
+        } else {
             return Err(MedCodeError::not_found(code, System::Icd10Cm));
+        };
+
+        // For hierarchy lookups, always use normalized (non-dotted) format
+        let hierarchy_key = self.normalize_code(found_key);
+
+        if let Some(Some(parent)) = self.parents.get(hierarchy_key.as_str())
+            && let Some(dotted_parent) = self.dotted_form_for_normalized(parent)
+            && let Some(description) = self.descriptions.get(dotted_parent)
+        {
+            return Ok(Some(Code {
+                system: System::Icd10Cm,
+                code: dotted_parent.to_string(),
+                description: description.to_string(),
+            }));
         }
 
-        self.parents
-            .get(normalized.as_str())
-            .map_or(Ok(None), |parent_opt| {
-                parent_opt.as_ref().map_or(Ok(None), |parent| {
-                    self.descriptions
-                        .get(parent)
-                        .map_or(Ok(None), |description| {
-                            Ok(Some(Code {
-                                system: System::Icd10Cm,
-                                code: parent.to_string(),
-                                description: description.to_string(),
-                            }))
-                        })
-                })
-            })
+        Ok(None)
     }
 
     /// Get all immediate children of a code.
     fn children(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
         let normalized = self.normalize_code(code);
-        // Validate the code exists first
-        if !self.descriptions.contains_key(normalized.as_str()) {
-            return Err(MedCodeError::not_found(code, System::Icd10Cm));
-        }
+        let trimmed = code.trim().to_uppercase();
 
-        self.children.get(normalized.as_str()).map_or_else(
+        // Validate the code exists first (check both formats)
+        let found_key = if self.descriptions.contains_key(normalized.as_str()) {
+            &normalized
+        } else if self.descriptions.contains_key(trimmed.as_str()) {
+            &trimmed
+        } else {
+            return Err(MedCodeError::not_found(code, System::Icd10Cm));
+        };
+
+        // For hierarchy lookups, always use normalized (non-dotted) format
+        let hierarchy_key = self.normalize_code(found_key);
+
+        self.children.get(hierarchy_key.as_str()).map_or_else(
             || Ok(Vec::new()),
             |children| {
                 let mut result = Vec::new();

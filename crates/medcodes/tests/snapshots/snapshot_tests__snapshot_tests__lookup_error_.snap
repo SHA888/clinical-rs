@@ -1,0 +1,8 @@
+---
+source: crates/medcodes/tests/snapshot_tests.rs
+expression: "&lookup_error"
+---
+NotFound {
+    code: "",
+    system: Icd10Cm,
+}

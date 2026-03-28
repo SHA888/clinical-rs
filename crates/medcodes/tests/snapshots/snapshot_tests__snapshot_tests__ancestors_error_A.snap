@@ -1,0 +1,8 @@
+---
+source: crates/medcodes/tests/snapshot_tests.rs
+expression: "&ancestors_error"
+---
+NotFound {
+    code: "A",
+    system: Icd10Cm,
+}

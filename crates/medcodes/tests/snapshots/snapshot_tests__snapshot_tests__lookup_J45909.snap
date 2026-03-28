@@ -1,0 +1,9 @@
+---
+source: crates/medcodes/tests/snapshot_tests.rs
+expression: "&lookup_result"
+---
+Code {
+    system: Icd10Cm,
+    code: "J45.909",
+    description: "Unspecified asthma, uncomplicated",
+}
