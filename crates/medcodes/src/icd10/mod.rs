@@ -18,6 +18,15 @@ pub struct Icd10Cm {
 
 impl Icd10Cm {
     /// Create a new `Icd10Cm` instance.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use medcodes::{icd10::Icd10Cm, CodeSystem};
+    ///
+    /// let icd10 = Icd10Cm::new();
+    /// assert!(icd10.is_valid("A00.0"));
+    /// ```
     #[must_use]
     pub fn new() -> Self {
         Self {

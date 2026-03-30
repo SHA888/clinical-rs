@@ -15,6 +15,16 @@ pub struct CcsrCategory {
 
 impl CcsrCategory {
     /// Create a new CCSR category
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use medcodes::ccsr::CcsrCategory;
+    ///
+    /// let category = CcsrCategory::new("DIG001", "Intestinal infectious diseases");
+    /// assert_eq!(category.code, "DIG001");
+    /// assert_eq!(category.description, "Intestinal infectious diseases");
+    /// ```
     #[must_use]
     pub fn new(code: impl Into<String>, description: impl Into<String>) -> Self {
         Self {
@@ -60,6 +70,16 @@ pub struct Icd10CmToCcsr {
 
 impl Icd10CmToCcsr {
     /// Create a new ICD-10-CM to CCSR cross-map
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use medcodes::ccsr::Icd10CmToCcsr;
+    ///
+    /// let mapper = Icd10CmToCcsr::new();
+    /// let categories = mapper.get_categories("A00.0").unwrap();
+    /// assert!(!categories.is_empty());
+    /// ```
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -68,6 +88,16 @@ impl Icd10CmToCcsr {
     }
 
     /// Get all CCSR categories for an ICD-10-CM code
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use medcodes::ccsr::Icd10CmToCcsr;
+    ///
+    /// let mapper = Icd10CmToCcsr::new();
+    /// let categories = mapper.get_categories("A00.0").unwrap();
+    /// // Returns all CCSR categories that map to ICD-10-CM code A00.0
+    /// ```
     ///
     /// # Errors
     ///
@@ -94,6 +124,16 @@ impl Icd10CmToCcsr {
     }
 
     /// Get the default CCSR category for a specific context
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use medcodes::ccsr::{Icd10CmToCcsr, CcsrContext};
+    ///
+    /// let mapper = Icd10CmToCcsr::new();
+    /// let category = mapper.get_default_category("A00.0", CcsrContext::Inpatient).unwrap();
+    /// // Returns the default CCSR category for inpatient stays
+    /// ```
     ///
     /// # Errors
     ///
@@ -201,6 +241,16 @@ pub struct CcsrToIcd10Cm {
 
 impl CcsrToIcd10Cm {
     /// Create a new CCSR to ICD-10-CM cross-map
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use medcodes::ccsr::CcsrToIcd10Cm;
+    ///
+    /// let mapper = CcsrToIcd10Cm::new();
+    /// let icd10_codes = mapper.get_icd10_codes("DIG001").unwrap();
+    /// assert!(!icd10_codes.is_empty());
+    /// ```
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -209,6 +259,16 @@ impl CcsrToIcd10Cm {
     }
 
     /// Get all ICD-10-CM codes for a CCSR category
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use medcodes::ccsr::CcsrToIcd10Cm;
+    ///
+    /// let mapper = CcsrToIcd10Cm::new();
+    /// let icd10_codes = mapper.get_icd10_codes("DIG001").unwrap();
+    /// // Returns all ICD-10-CM codes that map to CCSR category DIG001
+    /// ```
     ///
     /// # Errors
     ///

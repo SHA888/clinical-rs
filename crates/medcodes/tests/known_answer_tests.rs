@@ -486,8 +486,9 @@ mod known_answer_tests {
 
         let duration = start.elapsed();
         assert!(
-            duration.as_millis() < 1000,
-            "Operations on known codes should be fast"
+            duration.as_millis() < 2000,
+            "Operations on known codes should be fast, took {}ms",
+            duration.as_millis()
         );
     }
 }

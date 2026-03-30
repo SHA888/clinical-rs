@@ -60,6 +60,19 @@ pub struct Code {
 
 impl Code {
     /// Create a new medical code.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use medcodes::{Code, System};
+    ///
+    /// let code = Code::new(
+    ///     System::Icd10Cm,
+    ///     "A00.0",
+    ///     "Cholera due to Vibrio cholerae 01, biovar cholerae"
+    /// );
+    /// assert_eq!(code.system, System::Icd10Cm);
+    /// ```
     #[must_use]
     pub fn new(system: System, code: impl Into<String>, description: impl Into<String>) -> Self {
         Self {

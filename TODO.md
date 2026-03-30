@@ -360,10 +360,10 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
   - [x] Known-answer tests against CMS reference data (≥50 code lookups verified)
   - [x] Property tests (`proptest`): `normalize()` idempotent, `is_valid(normalize(x))` holds
   - [x] Snapshot tests (`insta`): hierarchy traversal output for known codes
-- [ ] **Documentation**
-  - [ ] Rustdoc for all public types and methods with examples
-  - [ ] Crate-level `README.md` with usage examples
-  - [ ] `CHANGELOG.md` entry
+- [x] **Documentation**
+  - [x] Rustdoc for all public types and methods with examples
+  - [x] Crate-level `README.md` with usage examples
+  - [x] `CHANGELOG.md` entry
 - [ ] **Release**
   - [ ] Version bump: `0.0.0` → `0.1.0`
   - [ ] `cargo release patch --execute -p medcodes`
