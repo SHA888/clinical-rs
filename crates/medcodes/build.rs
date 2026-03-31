@@ -12,8 +12,13 @@ use std::fmt::Write;
 use std::path::Path;
 
 fn main() {
-    println!("cargo:rerun-if-changed=data/april-1-2026-code-tables-tabular-and-index.zip");
-    println!("cargo:rerun-if-changed=data/DXCCSR-v2026-1.zip");
+    // Only check for data changes if data directory exists
+    // This allows publishing to crates.io without including large data files
+    let data_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/data");
+    if Path::new(data_dir).exists() {
+        println!("cargo:rerun-if-changed=data/april-1-2026-code-tables-tabular-and-index.zip");
+        println!("cargo:rerun-if-changed=data/DXCCSR-v2026-1.zip");
+    }
 
     // Generate ICD-10-CM data
     let icd10_data_path = concat!(
@@ -36,7 +41,7 @@ fn main() {
         }
     } else {
         eprintln!("Warning: CMS data file not found at {icd10_data_path}");
-        eprintln!("Extract the ZIP file to populate ICD-10-CM codes.");
+        eprintln!("Extract the ZIP file to populate ICD-10-CM codes, or use with-data feature.");
         generate_empty_maps();
     }
 
@@ -52,13 +57,13 @@ fn main() {
             }
             Err(e) => {
                 eprintln!("Warning: Failed to parse CCSR CSV: {e}");
-                eprintln!("Using empty CCSR maps.");
+                eprintln!("Using empty CCSR mappings.");
                 generate_empty_ccsr_maps();
             }
         }
     } else {
         eprintln!("Warning: CCSR data file not found at {ccsr_csv_path}");
-        eprintln!("Extract the CCSR ZIP file to populate CCSR mappings.");
+        eprintln!("Extract the ZIP file to populate CCSR mappings, or use with-data feature.");
         generate_empty_ccsr_maps();
     }
 }

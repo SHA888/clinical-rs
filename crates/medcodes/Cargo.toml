@@ -10,6 +10,13 @@ authors.workspace = true
 categories = ["science", "data-structures"]
 keywords = ["icd10", "medical-codes", "snomed", "loinc", "healthcare"]
 readme = "README.md"
+exclude = [
+    "data/*",
+    "target/*",
+    "tests/*",
+    "benches/*",
+    "*.snap",
+]
 
 [dependencies]
 thiserror = { workspace = true }
