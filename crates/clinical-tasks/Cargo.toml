@@ -16,14 +16,16 @@ arrow = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }
 medcodes = { version = "0.1.0", path = "../medcodes", optional = true }
+serde = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
 tempfile = { workspace = true }
 
 [features]
-default = []
+default = ["serde"]
 medcodes = ["dep:medcodes"]
+serde = ["dep:serde"]
 
 [[bench]]
 name = "windowing"

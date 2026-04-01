@@ -364,10 +364,10 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
   - [x] Rustdoc for all public types and methods with examples
   - [x] Crate-level `README.md` with usage examples
   - [x] `CHANGELOG.md` entry
-- [ ] **Release**
-  - [ ] Version bump: `0.0.0` → `0.1.0`
-  - [ ] `cargo release patch --execute -p medcodes`
-  - [ ] Verify crates.io page renders correctly
+- [x] **Release**
+  - [x] Version bump: `0.0.0` → `0.1.0`
+  - [x] `cargo release patch --execute -p medcodes`
+  - [x] Verify crates.io page renders correctly
 
 ### v0.2.0 — Code System Expansion
 
@@ -417,47 +417,47 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
 
 ## `mimic-etl`
 
-### v0.1.0 — MIMIC-IV Core Tables
+### v0.1.0
 
 Parse the most commonly used MIMIC-IV (v2.x) tables into Arrow.
 
-- [ ] **Core ETL types**
-  - [ ] `ClinicalEvent` Arrow schema definition (shared constant)
-  - [ ] `DatasetConfig` struct (root path, table selection, batch size, parallelism)
-  - [ ] `Error` type
-- [ ] **MIMIC-IV hosp module**
-  - [ ] `admissions.csv` parser → ClinicalEvent batches
-  - [ ] `patients.csv` parser → patient demographics Arrow table
-  - [ ] `diagnoses_icd.csv` parser
-  - [ ] `procedures_icd.csv` parser
-  - [ ] `prescriptions.csv` parser
-  - [ ] `labevents.csv` parser
-  - [ ] `microbiologyevents.csv` parser
-  - [ ] `transfers.csv` parser
-- [ ] **MIMIC-IV icu module**
-  - [ ] `icustays.csv` parser
-  - [ ] `chartevents.csv` parser (streaming — ~330M rows)
-  - [ ] `inputevents.csv` parser
-  - [ ] `outputevents.csv` parser
-  - [ ] `procedureevents.csv` parser
-- [ ] **Parallel processing**
-  - [ ] `rayon`-based parallel table parsing
-  - [ ] Chunk-level parallelism within large tables
-- [ ] **Memory-mapped I/O**
-  - [ ] `memmap2` for all CSV reads
-  - [ ] Configurable batch size (default 128K rows per RecordBatch)
-- [ ] **Output formats**
-  - [ ] `to_parquet(batches, path)`
-  - [ ] `to_arrow_ipc(batches, path)`
-  - [ ] Streaming: `into_event_stream()` → `Iterator<Item = Result<RecordBatch>>`
-- [ ] **Tests**
-  - [ ] Synthetic MIMIC-like CSV fixtures (no real PHI in repo)
-  - [ ] Schema validation: output matches `ClinicalEvent` schema
-  - [ ] Round-trip: CSV → Arrow → Parquet → read back, verify row counts
-- [ ] **Documentation + release**
-  - [ ] Rustdoc, crate `README.md`, `CHANGELOG.md`
-  - [ ] Supported tables matrix
-  - [ ] Version bump `0.0.0` → `0.1.0`, publish
+- [x] **Core ETL types**
+  - [x] `ClinicalEvent` Arrow schema definition (shared constant)
+  - [x] `DatasetConfig` struct (root path, table selection, batch size, parallelism)
+  - [x] `Error` type
+- [x] **MIMIC-IV hosp module**
+  - [x] `admissions.csv` parser → ClinicalEvent batches
+  - [x] `patients.csv` parser → patient demographics Arrow table
+  - [x] `diagnoses_icd.csv` parser
+  - [x] `procedures_icd.csv` parser
+  - [x] `prescriptions.csv` parser
+  - [x] `labevents.csv` parser
+  - [x] `microbiologyevents.csv` parser
+  - [x] `transfers.csv` parser
+- [x] **MIMIC-IV icu module**
+  - [x] `icustays.csv` parser
+  - [x] `chartevents.csv` parser (streaming — ~330M rows)
+  - [x] `inputevents.csv` parser
+  - [x] `outputevents.csv` parser
+  - [x] `procedureevents.csv` parser
+- [x] **Parallel processing**
+  - [x] `rayon`-based parallel table parsing
+  - [x] Chunk-level parallelism within large tables
+- [x] **Memory-mapped I/O**
+  - [x] `memmap2` for all CSV reads
+  - [x] Configurable batch size (default 128K rows per RecordBatch)
+- [x] **Output formats**
+  - [x] `to_parquet(batches, path)`
+  - [x] `to_arrow_ipc(batches, path)`
+  - [x] Streaming: `into_event_stream()` → `Iterator<Item = Result<RecordBatch>>`
+- [x] **Tests**
+  - [x] Synthetic MIMIC-like CSV fixtures (no real PHI in repo)
+  - [x] Schema validation: output matches `ClinicalEvent` schema
+  - [x] Round-trip: CSV → Arrow → Parquet → read back, verify row counts
+- [x] **Documentation + release**
+  - [x] Rustdoc, crate `README.md`, `CHANGELOG.md`
+  - [x] Supported tables matrix
+  - [x] Version bump `0.0.0` → `0.1.0`, publish
 
 ### v0.2.0 — MIMIC-III + Performance
 
@@ -496,35 +496,35 @@ Parse the most commonly used MIMIC-IV (v2.x) tables into Arrow.
 
 Minimal task windowing engine with one fully implemented task.
 
-- [ ] **Core types**
-  - [ ] `TaskDefinition` trait
-  - [ ] `TaskWindows` struct (observation, gap, prediction, anchor)
-  - [ ] `AnchorPoint` enum (Admission, Discharge, ICUAdmission, ICUDischarge, Custom)
-  - [ ] `TaskRunner` — applies a `TaskDefinition` to a RecordBatch stream
-  - [ ] `Error` type
-- [ ] **Patient grouping**
-  - [ ] Group RecordBatch stream by `(patient_id, visit_id)`
-  - [ ] Sort events by timestamp within each group
-  - [ ] Handle multi-visit patients
-- [ ] **In-hospital mortality prediction**
-  - [ ] `MortalityPrediction` implementing `TaskDefinition`
-  - [ ] Configurable observation window (default: 48h)
-  - [ ] Label: binary (died during hospitalization)
-  - [ ] Features: code frequency vectors, lab value statistics
-  - [ ] Exclusion: stays < observation window, patients < 18
-- [ ] **Patient-level splitting**
-  - [ ] `split_by_patient(batches, ratios)` → (train, val, test)
-  - [ ] Deterministic split via patient_id hashing
-  - [ ] No patient in multiple splits
-- [ ] **Output**
-  - [ ] RecordBatch with feature + label columns
-  - [ ] Parquet / Arrow IPC export
-  - [ ] Schema metadata (task name, windows, split)
-- [ ] **Tests**
-  - [ ] Synthetic patient timeline tests
-  - [ ] Data leakage verification
-  - [ ] Patient-level split verification
-  - [ ] Known-answer labels for synthetic patients
+- [x] **Core types**
+  - [x] `TaskDefinition` trait
+  - [x] `TaskWindows` struct (observation, gap, prediction, anchor)
+  - [x] `AnchorPoint` enum (Admission, Discharge, ICUAdmission, ICUDischarge, Custom)
+  - [x] `TaskRunner` — applies a `TaskDefinition` to a RecordBatch stream
+  - [x] `Error` type
+- [x] **Patient grouping**
+  - [x] Group RecordBatch stream by `(patient_id, visit_id)`
+  - [x] Sort events by timestamp within each group
+  - [x] Handle multi-visit patients
+- [x] **In-hospital mortality prediction**
+  - [x] `MortalityPrediction` implementing `TaskDefinition`
+  - [x] Configurable observation window (default: 48h)
+  - [x] Label: binary (died during hospitalization)
+  - [x] Features: code frequency vectors, lab value statistics
+  - [x] Exclusion: stays < observation window, patients < 18
+- [x] **Patient-level splitting**
+  - [x] `split_by_patient(batches, ratios)` → (train, val, test)
+  - [x] Deterministic split via patient_id hashing
+  - [x] No patient in multiple splits
+- [x] **Output**
+  - [x] RecordBatch with feature + label columns
+  - [x] Parquet / Arrow IPC export
+  - [x] Schema metadata (task name, windows, split)
+- [x] **Tests**
+  - [x] Synthetic patient timeline tests
+  - [x] Data leakage verification
+  - [x] Patient-level split verification
+  - [x] Known-answer labels for synthetic patients
 - [ ] **Documentation + release**
   - [ ] Rustdoc, `README.md` with end-to-end example, `CHANGELOG.md`
   - [ ] Version bump `0.0.0` → `0.1.0`, publish
