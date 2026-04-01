@@ -525,9 +525,9 @@ Minimal task windowing engine with one fully implemented task.
   - [x] Data leakage verification
   - [x] Patient-level split verification
   - [x] Known-answer labels for synthetic patients
-- [ ] **Documentation + release**
-  - [ ] Rustdoc, `README.md` with end-to-end example, `CHANGELOG.md`
-  - [ ] Version bump `0.0.0` → `0.1.0`, publish
+- [x] **Documentation + release**
+  - [x] Rustdoc, `README.md` with end-to-end example, `CHANGELOG.md`
+  - [x] Version bump `0.0.2-rc.2` → `0.1.0`, publish
 
 ### v0.2.0 — Task Expansion
 

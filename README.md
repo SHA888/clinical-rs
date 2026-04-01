@@ -98,7 +98,110 @@ let task = MortalityPrediction::new(TaskConfig {
 let samples = task.apply(events)?;  // Iterator<Item = RecordBatch> with features + label columns
 ```
 
-> **Note:** API examples are illustrative and will evolve before 0.1.0 release.
+## End-to-End Example
+
+Here's a complete pipeline from MIMIC-IV CSV to a mortality prediction dataset:
+
+```rust
+use std::sync::Arc;
+use arrow::record_batch::RecordBatch;
+use clinical_tasks::{MortalityPrediction, TaskWindows, AnchorPoint, split_by_patient, outputs_to_batch};
+use mimic_etl::{MimicCsvReader, DatasetConfig};
+use medcodes::icd10cm::Icd10Cm;
+
+// 1. Load MIMIC-IV data
+let config = DatasetConfig {
+    root_path: "path/to/mimic-iv/".to_string(),
+    tables: vec![
+        "admissions".to_string(),
+        "patients".to_string(),
+        "icustays".to_string(),
+        "diagnoses_icd".to_string(),
+        "labevents".to_string(),
+    ],
+    batch_size: 10000,
+};
+
+let reader = MimicCsvReader::new(config);
+let mut all_events = Vec::new();
+
+// 2. Convert each table to Arrow RecordBatches
+for table in &reader.config.tables {
+    let path = format!("{}/{}.csv", reader.config.root_path, table);
+    let batches = reader.read_table(table, path)?;
+    all_events.extend(batches);
+}
+
+// 3. Combine all events into a single stream
+let combined_batch = // ... combine batches from all tables ...
+
+// 4. Configure the mortality prediction task
+let windows = TaskWindows::new(
+    48.0,    // 48-hour observation window
+    0.0,     // No gap between observation and prediction
+    24.0,    // 24-hour prediction window
+    AnchorPoint::Admission,
+);
+
+let task = MortalityPrediction::new(windows);
+
+// 5. Process patients through the task
+let outputs = task.process_batch(&combined_batch)?;
+
+// 6. Split into train/validation/test sets (patient-level)
+let split_config = SplitConfig {
+    train_ratio: 0.7,
+    val_ratio: 0.15,
+    test_ratio: 0.15,
+    seed: 42,
+};
+
+let (train, val, test) = split_by_patient(&outputs, &split_config)?;
+
+// 7. Convert to Arrow format for ML
+let schema = task.output_schema();
+let train_batch = outputs_to_batch(&train, &schema)?;
+let val_batch = outputs_to_batch(&val, &schema)?;
+let test_batch = outputs_to_batch(&test, &schema)?;
+
+// 8. Save to Parquet
+use parquet::arrow::ArrowWriter;
+use std::fs::File;
+
+let train_file = File::create("train.parquet")?;
+let mut train_writer = ArrowWriter::try_new(train_file, schema.as_ref(), None)?;
+train_writer.write(&train_batch)?;
+train_writer.close()?;
+
+println!("Created ML-ready dataset:");
+println!("- Train: {} patients", train.len());
+println!("- Validation: {} patients", val.len());
+println!("- Test: {} patients", test.len());
+println!("- Features: {}", schema.fields.len() - 1); // -1 for label
+```
+
+### Output Schema
+
+The mortality prediction task generates the following Arrow schema:
+
+```rust
+Schema {
+    fields: [
+        Field("patient_id", DataType::Int64, false),      // Patient identifier
+        Field("admission_id", DataType::Int64, true),      // Hospital admission
+        Field("age", DataType::Float64, true),             // Age at admission
+        Field("gender_male", DataType::Float64, false),    // Gender (1=male, 0=female)
+        Field("num_diagnoses", DataType::Float64, false),  // Count of diagnoses
+        Field("num_procedures", DataType::Float64, false), // Count of procedures
+        Field("num_medications", DataType::Float64, false), // Count of medications
+        Field("num_labs", DataType::Float64, false),       // Count of lab measurements
+        Field("abnormal_labs_ratio", DataType::Float64, false), // Ratio of abnormal labs
+        Field("label", DataType::Float64, false),          // 1=died, 0=survived
+    ]
+}
+```
+
+This dataset is ready for training with any ML framework that supports Arrow (PyTorch, TensorFlow, XGBoost, etc.).
 
 ## Design Principles
 
