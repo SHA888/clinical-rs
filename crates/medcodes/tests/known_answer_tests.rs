@@ -1,3 +1,6 @@
+#![allow(clippy::unwrap_used)]
+#![allow(clippy::panic)]
+
 //! Known-answer tests against CMS reference data
 //! Tests 50+ actual ICD-10-CM codes with verified lookups and hierarchy
 
@@ -145,10 +148,10 @@ mod known_answer_tests {
         let icd10 = Icd10Cm::new();
 
         for &code in VALID_CODES {
-            assert!(icd10.is_valid(code), "Code {} should be valid", code);
+            assert!(icd10.is_valid(code), "Code {code} should be valid");
 
             let result = icd10.lookup(code);
-            assert!(result.is_ok(), "Lookup for {} should succeed", code);
+            assert!(result.is_ok(), "Lookup for {code} should succeed");
 
             let lookup_result = result.unwrap();
             assert_eq!(lookup_result.system, System::Icd10Cm);
@@ -227,8 +230,7 @@ mod known_answer_tests {
                     assert_eq!(
                         ancestor_codes.len(),
                         ancestors.len(),
-                        "Ancestors should be unique for {}",
-                        code
+                        "Ancestors should be unique for {code}"
                     );
 
                     // Check that all ancestors are valid
@@ -267,8 +269,7 @@ mod known_answer_tests {
                     // Check that we have at least some descendants
                     assert!(
                         !descendants.is_empty(),
-                        "Parent {} should have descendants",
-                        parent_code
+                        "Parent {parent_code} should have descendants"
                     );
                 }
             }
@@ -290,8 +291,7 @@ mod known_answer_tests {
                 Ok(categories) => {
                     assert!(
                         !categories.is_empty(),
-                        "Code {} should have CCSR categories",
-                        code
+                        "Code {code} should have CCSR categories"
                     );
 
                     // Test reverse mapping for each category
@@ -317,7 +317,7 @@ mod known_answer_tests {
                     // Expected if code not in CCSR mapping
                 }
                 Err(e) => {
-                    panic!("Unexpected error for code {}: {:?}", code, e);
+                    panic!("Unexpected error for code {code}: {e:?}");
                 }
             }
         }
@@ -347,10 +347,7 @@ mod known_answer_tests {
                         // Expected if code not in mapping or no default for context
                     }
                     Err(e) => {
-                        panic!(
-                            "Unexpected error for code {} in context {:?}: {:?}",
-                            code, context, e
-                        );
+                        panic!("Unexpected error for code {code} in context {context:?}: {e:?}");
                     }
                 }
             }
@@ -411,25 +408,21 @@ mod known_answer_tests {
                 // Description should be meaningful
                 assert!(
                     !description.is_empty(),
-                    "Description for {} should not be empty",
-                    code
+                    "Description for {code} should not be empty"
                 );
                 assert!(
                     description.len() > 3,
-                    "Description for {} should be meaningful",
-                    code
+                    "Description for {code} should be meaningful"
                 );
 
                 // Description should not contain obvious placeholders
                 assert!(
                     !description.contains("UNKNOWN"),
-                    "Description for {} should not be placeholder",
-                    code
+                    "Description for {code} should not be placeholder"
                 );
                 assert!(
                     !description.contains("N/A"),
-                    "Description for {} should not be N/A",
-                    code
+                    "Description for {code} should not be N/A"
                 );
             }
         }

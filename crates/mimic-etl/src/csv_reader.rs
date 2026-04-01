@@ -66,7 +66,7 @@ impl MimicCsvReader {
             "procedureevents" => self.convert_procedureevents(&headers, &records),
             "microbiologyevents" => self.convert_microbiologyevents(&headers, &records),
             "transfers" => self.convert_transfers(&headers, &records),
-            _ => Err(EtlError::Config(format!("Unknown table: {}", table_name))),
+            _ => Err(EtlError::Config(format!("Unknown table: {table_name}"))),
         }
     }
 

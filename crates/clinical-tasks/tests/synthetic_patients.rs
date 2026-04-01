@@ -1,5 +1,7 @@
 #![allow(clippy::redundant_clone)]
 #![allow(clippy::float_cmp)]
+#![allow(clippy::unwrap_used)]
+#![allow(clippy::panic)]
 
 //! Tests with synthetic patient timelines to verify task windowing logic.
 

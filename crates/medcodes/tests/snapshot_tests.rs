@@ -1,3 +1,6 @@
+#![allow(clippy::unwrap_used)]
+#![allow(clippy::panic)]
+
 //! Snapshot tests for hierarchy traversal using insta
 //! Captures the exact output of hierarchy operations for known codes
 
@@ -18,16 +21,16 @@ mod snapshot_tests {
         for &code in &test_codes {
             if icd10.is_valid(code) {
                 let ancestors = icd10.ancestors(code).unwrap_or_default();
-                assert_debug_snapshot!(format!("ancestors_{}", code), &ancestors);
+                assert_debug_snapshot!(format!("ancestors_{code}"), &ancestors);
 
                 let descendants = icd10.descendants(code).unwrap_or_default();
-                assert_debug_snapshot!(format!("descendants_{}", code), &descendants);
+                assert_debug_snapshot!(format!("descendants_{code}"), &descendants);
 
                 let parent = icd10.parent(code).unwrap_or_default();
-                assert_debug_snapshot!(format!("parent_{}", code), &parent);
+                assert_debug_snapshot!(format!("parent_{code}"), &parent);
 
                 let children = icd10.children(code).unwrap_or_default();
-                assert_debug_snapshot!(format!("children_{}", code), &children);
+                assert_debug_snapshot!(format!("children_{code}"), &children);
             }
         }
     }
@@ -43,7 +46,7 @@ mod snapshot_tests {
         for &code in &test_codes {
             // Forward mapping
             if let Ok(categories) = forward_mapper.get_categories(code) {
-                assert_debug_snapshot!(format!("ccsr_categories_{}", code), &categories);
+                assert_debug_snapshot!(format!("ccsr_categories_{code}"), &categories);
             }
 
             // Context-sensitive mapping
@@ -56,7 +59,7 @@ mod snapshot_tests {
             for &context in &contexts {
                 if let Ok(default_category) = forward_mapper.get_default_category(code, context) {
                     assert_debug_snapshot!(
-                        format!("ccsr_default_{}_{:?}", code, context),
+                        format!("ccsr_default_{code}_{context:?}"),
                         &default_category
                     );
                 }
@@ -68,7 +71,7 @@ mod snapshot_tests {
 
         for &ccsr_code in &test_ccsr_codes {
             if let Ok(icd10_codes) = reverse_mapper.get_icd10_codes(ccsr_code) {
-                assert_debug_snapshot!(format!("icd10_from_ccsr_{}", ccsr_code), &icd10_codes);
+                assert_debug_snapshot!(format!("icd10_from_ccsr_{ccsr_code}"), &icd10_codes);
             }
         }
     }
@@ -82,7 +85,7 @@ mod snapshot_tests {
 
         for &code in &test_codes {
             if let Ok(lookup_result) = icd10.lookup(code) {
-                assert_debug_snapshot!(format!("lookup_{}", code), &lookup_result);
+                assert_debug_snapshot!(format!("lookup_{code}"), &lookup_result);
             }
         }
     }
@@ -98,7 +101,7 @@ mod snapshot_tests {
         for &code in &test_codes {
             // Forward mapping through CrossMap trait
             if let Ok(mapped_codes) = forward_mapper.map(code, System::Ccsr) {
-                assert_debug_snapshot!(format!("crossmap_forward_{}", code), &mapped_codes);
+                assert_debug_snapshot!(format!("crossmap_forward_{code}"), &mapped_codes);
             }
 
             // Reverse mapping through CrossMap trait
@@ -106,7 +109,11 @@ mod snapshot_tests {
                 for category in categories {
                     if let Ok(mapped_codes) = reverse_mapper.map(&category.code, System::Icd10Cm) {
                         assert_debug_snapshot!(
-                            format!("crossmap_reverse_{}_{}", code, category.code),
+                            format!(
+                                "crossmap_reverse_{code}_{category_code}",
+                                code = code,
+                                category_code = category.code
+                            ),
                             &mapped_codes
                         );
                     }
@@ -126,17 +133,17 @@ mod snapshot_tests {
         for &code in &invalid_codes {
             // ICD-10-CM errors
             let lookup_error = icd10.lookup(code).unwrap_err();
-            assert_debug_snapshot!(format!("lookup_error_{}", code), &lookup_error);
+            assert_debug_snapshot!(format!("lookup_error_{code}"), &lookup_error);
 
             let ancestors_error = icd10.ancestors(code).unwrap_err();
-            assert_debug_snapshot!(format!("ancestors_error_{}", code), &ancestors_error);
+            assert_debug_snapshot!(format!("ancestors_error_{code}"), &ancestors_error);
 
             // Cross-mapping errors
             let forward_error = forward_mapper.get_categories(code).unwrap_err();
-            assert_debug_snapshot!(format!("forward_error_{}", code), &forward_error);
+            assert_debug_snapshot!(format!("forward_error_{code}"), &forward_error);
 
             let reverse_error = reverse_mapper.get_icd10_codes(code).unwrap_err();
-            assert_debug_snapshot!(format!("reverse_error_{}", code), &reverse_error);
+            assert_debug_snapshot!(format!("reverse_error_{code}"), &reverse_error);
         }
     }
 
@@ -146,8 +153,8 @@ mod snapshot_tests {
         let systems = [System::Icd10Cm, System::Ccsr];
 
         for &system in &systems {
-            let display_str = format!("{}", system);
-            assert_snapshot!(format!("system_display_{:?}", system), &display_str);
+            let display_str = format!("{system}");
+            assert_snapshot!(format!("system_display_{system:?}"), &display_str);
         }
     }
 

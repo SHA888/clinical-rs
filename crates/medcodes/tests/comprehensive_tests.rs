@@ -1,3 +1,6 @@
+#![allow(clippy::unwrap_used)]
+#![allow(clippy::panic)]
+
 //! Comprehensive tests for all public methods in the medcodes crate
 
 use medcodes::*;
@@ -47,14 +50,16 @@ mod types_tests {
 
     #[test]
     fn test_system_display() {
-        assert_eq!(format!("{}", System::Icd10Cm), "ICD-10-CM");
-        assert_eq!(format!("{}", System::Ccsr), "CCSR");
+        let system = System::Icd10Cm;
+        assert_eq!(format!("{system}"), "ICD-10-CM");
+        let system = System::Ccsr;
+        assert_eq!(format!("{system}"), "CCSR");
     }
 
     #[test]
     fn test_code_display() {
         let code = Code::new(System::Icd10Cm, "A0100", "Cholera");
-        assert_eq!(format!("{}", code), "ICD-10-CM A0100: Cholera");
+        assert_eq!(format!("{code}"), "ICD-10-CM A0100: Cholera");
     }
 }
 
@@ -140,7 +145,7 @@ mod icd10cm_comprehensive_tests {
         for &code in &test_codes {
             if icd10.is_valid(code) {
                 let result = icd10.ancestors(code);
-                assert!(result.is_ok(), "ancestors({}) should succeed", code);
+                assert!(result.is_ok(), "ancestors({code}) should succeed");
                 let ancestors = result.unwrap();
 
                 // All ancestors should be valid ICD-10-CM codes
@@ -166,7 +171,7 @@ mod icd10cm_comprehensive_tests {
         for &code in &test_codes {
             if icd10.is_valid(code) {
                 let result = icd10.descendants(code);
-                assert!(result.is_ok(), "descendants({}) should succeed", code);
+                assert!(result.is_ok(), "descendants({code}) should succeed");
                 let descendants = result.unwrap();
 
                 // All descendants should be valid ICD-10-CM codes
@@ -220,7 +225,7 @@ mod icd10cm_comprehensive_tests {
         for &code in &test_codes {
             if icd10.is_valid(code) {
                 let result = icd10.children(code);
-                assert!(result.is_ok(), "children({}) should succeed", code);
+                assert!(result.is_ok(), "children({code}) should succeed");
                 let children = result.unwrap();
 
                 // All children should be valid ICD-10-CM codes
@@ -287,7 +292,7 @@ mod ccsr_comprehensive_tests {
                 // Expected if code not in mapping
             }
             Err(e) => {
-                panic!("Unexpected error: {:?}", e);
+                panic!("Unexpected error: {e:?}");
             }
         }
 
@@ -320,7 +325,7 @@ mod ccsr_comprehensive_tests {
                     // Expected if code not in mapping or no default for context
                 }
                 Err(e) => {
-                    panic!("Unexpected error for context {:?}: {:?}", context, e);
+                    panic!("Unexpected error for context {context:?}: {e:?}");
                 }
             }
         }
@@ -353,7 +358,7 @@ mod ccsr_comprehensive_tests {
                 // Expected if code not in mapping
             }
             Err(e) => {
-                panic!("Unexpected error: {:?}", e);
+                panic!("Unexpected error: {e:?}");
             }
         }
 
@@ -395,7 +400,7 @@ mod ccsr_comprehensive_tests {
                 // Expected if category not in mapping
             }
             Err(e) => {
-                panic!("Unexpected error: {:?}", e);
+                panic!("Unexpected error: {e:?}");
             }
         }
 
@@ -426,7 +431,7 @@ mod ccsr_comprehensive_tests {
                 // Expected if category not in mapping
             }
             Err(e) => {
-                panic!("Unexpected error: {:?}", e);
+                panic!("Unexpected error: {e:?}");
             }
         }
 
@@ -484,8 +489,8 @@ proptest! {
         Just(System::Ccsr),
     ], code in "[A-Z0-9]{3,7}", desc in "[a-zA-Z ]{10,50}") {
         let code_obj = Code::new(system, &code, &desc);
-        let display_str = format!("{}", code_obj);
-        let system_str = format!("{}", system);
+        let display_str = format!("{code_obj}");
+        let system_str = format!("{system}");
         // Should contain system, code, and description
         prop_assert!(display_str.contains(&system_str));
         prop_assert!(display_str.contains(&code));

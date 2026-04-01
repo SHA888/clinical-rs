@@ -276,8 +276,7 @@ pub fn outputs_to_batch(outputs: &[TaskOutput], schema: &Schema) -> Result<Recor
             }
             _ => {
                 return Err(TaskError::Execution(format!(
-                    "Unsupported field type in schema: {} {:?}",
-                    field_name, data_type
+                    "Unsupported field type in schema: {field_name} {data_type:?}"
                 )));
             }
         }

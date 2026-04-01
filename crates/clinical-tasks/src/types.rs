@@ -212,8 +212,7 @@ impl SplitConfig {
         let sum = self.train_ratio + self.val_ratio + self.test_ratio;
         if (sum - 1.0).abs() > 1e-6 {
             return Err(TaskError::Validation(format!(
-                "Split ratios must sum to 1.0, got {}",
-                sum
+                "Split ratios must sum to 1.0, got {sum}"
             )));
         }
         Ok(())
