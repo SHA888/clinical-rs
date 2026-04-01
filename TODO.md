@@ -13,6 +13,9 @@ Comprehensive checklist organized by phase and [SemVer](https://semver.org/) rel
 - [mimic-etl](#mimic-etl)
 - [clinical-tasks](#clinical-tasks)
 - [Future Crates (Post-1.0)](#future-crates-post-10)
+  - [eicu-etl](#eicu-etl)
+  - [omop-etl](#omop-etl)
+  - [fhir-etl](#fhir-etl)
 
 ---
 
@@ -561,9 +564,9 @@ Tracked for roadmap visibility. Will not block any 1.0 release.
 
 | Crate | Purpose | Depends on |
 |-------|---------|------------|
-| `eicu-etl` | eICU → Arrow ClinicalEvent schema | `medcodes` (optional) |
-| `omop-etl` | OMOP-CDM v5.4 → Arrow | `medcodes` (optional) |
-| `fhir-etl` | FHIR R4 JSON/NDJSON → Arrow | `medcodes` (optional) |
+| [`eicu-etl`](#eicu-etl) | eICU → Arrow ClinicalEvent schema | `medcodes` (optional) |
+| [`omop-etl`](#omop-etl) | OMOP-CDM v5.4 → Arrow | `medcodes` (optional) |
+| [`fhir-etl`](#fhir-etl) | FHIR R4 JSON/NDJSON → Arrow | `medcodes` (optional) |
 | `clinical-signals` | EDF/EDF+, WFDB biosignal I/O + epoch windowing | — |
 | `clinical-metrics` | AUROC, PR-AUC, NRI, DCA, Brier, C-statistic | — |
 | `clinical-calib` | Conformal prediction for model calibration | `clinical-metrics` |
@@ -574,20 +577,178 @@ Tracked for roadmap visibility. Will not block any 1.0 release.
 ## Release Sequence
 
 ```
-Phase 0 (bootstrap)      ← YOU ARE HERE
+Phase 0 (bootstrap)           ✓ complete
     │
     ▼
-medcodes v0.1.0          ← first crate published (zero internal deps)
+medcodes v0.1.0               ✓ published
     │
-    ├─► mimic-etl v0.1.0  ← second (optionally depends on medcodes)
+    ├─► mimic-etl v0.1.0      ✓ published
     │
-    └─► clinical-tasks v0.1.0  ← third (consumes Arrow, optionally uses medcodes)
+    └─► clinical-tasks v0.1.0 ✓ published
     │
     ▼
-Iterate: v0.2.0, v0.3.0 across all crates in parallel
+Iterate: v0.2.0, v0.3.0 across all crates in parallel  ← YOU ARE HERE
+    │
+    ├─► eicu-etl v0.1.0       high priority — data already on local machine
     │
     ▼
 API review → v1.0.0 per crate (independent timelines)
+    │
+    ▼
+omop-etl v0.1.0               medium priority
+fhir-etl v0.1.0               medium priority
 ```
 
 Within each release, checklist items are ordered by implementation priority (top = first).
+
+---
+
+## `eicu-etl`
+
+eICU Collaborative Research Database → Arrow, aligned to the `ClinicalEvent` schema.
+
+eICU key differences from MIMIC-IV: multi-site (208 ICUs), `patientunitstayid` as primary
+join key, explicit vasopressor and ventilator tables, APACHE IVa severity scoring.
+
+### v0.1.0 — Core parsers
+
+- [ ] **Crate scaffold**
+  - [ ] `crates/eicu-etl/Cargo.toml` (same structure as `mimic-etl`, `medcodes` optional)
+  - [ ] `crates/eicu-etl/src/lib.rs` — module stubs
+  - [ ] `crates/eicu-etl/README.md`, `CHANGELOG.md`
+  - [ ] Add to workspace `members` in root `Cargo.toml`
+- [ ] **Core ETL types**
+  - [ ] `DatasetConfig` struct (root path, table selection, batch size)
+  - [ ] `Error` type
+- [ ] **Core table parsers**
+  - [ ] `patient.csv` → Arrow (patientunitstayid, age, gender, ethnicity, unittype,
+    unitstaytype, admissionheight, admissionweight, unitdischargestatus, LOS)
+  - [ ] `diagnosis.csv` → Arrow (ICD-9 codes, active problems, diagnosisoffset)
+  - [ ] `lab.csv` → Arrow (labname, labresult, labresultoffset, labresulttypeindex)
+  - [ ] `vitalperiodic.csv` → Arrow (time-series: HR, SBP, DBP, MAP, SpO2, RR, temp)
+  - [ ] `vitalaperiodic.csv` → Arrow (non-periodic vitals: GCS, pupil, non-invasive BP)
+  - [ ] `medication.csv` → Arrow (drugname, dosage, routeadmin, drugstartoffset)
+  - [ ] `infusiondrug.csv` → Arrow (vasopressors, sedation infusions, drugrate)
+  - [ ] `respiratorycare.csv` → Arrow (airwaytype, priorventstartoffset, ventendoffset)
+    - [ ] Note: SAT/SBT attempts derivable from airwaytype + vent timing — document derivation
+  - [ ] `apachepatientresult.csv` → Arrow (apachescore, predictedicumortality, actualhospitalmortality)
+  - [ ] `apachepredvar.csv` → Arrow (APACHE IVa predictor variables)
+- [ ] **Output formats**
+  - [ ] `to_parquet(batches, path)`
+  - [ ] `to_arrow_ipc(batches, path)`
+  - [ ] Streaming: `into_event_stream()` → `Iterator<Item = Result<RecordBatch>>`
+- [ ] **Tests**
+  - [ ] Synthetic eICU-like CSV fixtures (no real PHI in repo)
+  - [ ] Schema validation: output matches `ClinicalEvent` schema
+  - [ ] Round-trip: CSV → Arrow → Parquet → read back, verify row counts
+- [ ] **Documentation + release**
+  - [ ] Rustdoc, `README.md` with supported tables matrix, `CHANGELOG.md`
+  - [ ] Version bump `0.0.0` → `0.1.0`, publish
+
+### v0.2.0 — Schema alignment + medcodes integration
+
+- [ ] **`ClinicalEvent` schema alignment** — align eICU output with MIMIC-IV shared schema
+- [ ] **`medcodes` integration** (feature flag)
+  - [ ] ICD-9-CM → ICD-10-CM crosswalk via `medcodes` during parsing
+- [ ] **Multi-site field** — `hospitalid` preserved in all Arrow outputs
+- [ ] **SAT/SBT event struct** — `RespiratoryEvent` mirroring MIMIC-IV equivalent
+- [ ] **Performance benchmarks** — `criterion` suite, comparison methodology documented
+
+### v0.3.0 — Full table coverage + CLI
+
+- [ ] Remaining tables: `nursecharting`, `note`, `microlab`, `physicalexam`, `treatment`
+- [ ] CLI tool (feature flag: `cli`): `eicu-etl convert --input <path> --output <path>`
+- [ ] Version auto-detection (eICU v2.0 vs v2.0.1 schema differences)
+
+### v1.0.0 — Stable API
+
+- [ ] `ClinicalEvent` schema finalized and aligned with `mimic-etl`
+- [ ] Migration guide, MSRV policy, published
+
+---
+
+## `omop-etl`
+
+OMOP Common Data Model v5.4 → Arrow, aligned to the `ClinicalEvent` schema.
+Enables clinical-rs to handle any OMOP-compliant EHR export (Epic, Cerner, etc.).
+
+### v0.1.0 — Core CDM v5.4 tables
+
+- [ ] **Crate scaffold**
+  - [ ] `crates/omop-etl/Cargo.toml`
+  - [ ] `crates/omop-etl/src/lib.rs` — module stubs
+  - [ ] `crates/omop-etl/README.md`, `CHANGELOG.md`
+  - [ ] Add to workspace `members`
+- [ ] **Core table parsers** (CSV exports from any OMOP-compliant source)
+  - [ ] `PERSON` → Arrow (demographics, birth_datetime, gender_concept_id, race, ethnicity)
+  - [ ] `VISIT_OCCURRENCE` → Arrow (visit_start/end_datetime, visit_type_concept_id)
+  - [ ] `CONDITION_OCCURRENCE` → Arrow (condition_concept_id, condition_start_datetime)
+  - [ ] `DRUG_EXPOSURE` → Arrow (drug_concept_id, drug_exposure_start_datetime, quantity)
+  - [ ] `MEASUREMENT` → Arrow (measurement_concept_id, value_as_number, unit_concept_id)
+  - [ ] `PROCEDURE_OCCURRENCE` → Arrow (procedure_concept_id, procedure_datetime)
+  - [ ] `OBSERVATION` → Arrow (observation_concept_id, value_as_string)
+  - [ ] `VISIT_DETAIL` → Arrow (ICU stay granularity, care_site_id)
+- [ ] **Concept ID resolution**
+  - [ ] `CONCEPT` table parser — embedded concept vocabulary lookup at parse time
+  - [ ] Concept ID → standard name + domain + vocabulary_id
+- [ ] **`ClinicalEvent` schema output** — aligned with `mimic-etl` shared schema
+- [ ] **Tests** — synthetic OMOP-like fixtures, round-trip validation
+- [ ] **Documentation + release** — version `0.0.0` → `0.1.0`, publish
+
+### v0.2.0 — Vocabularies + medcodes integration
+
+- [ ] **Full OMOP vocabulary embedding** — `CONCEPT.csv` processing at build time via `build.rs`
+- [ ] **`medcodes` integration** (feature flag) — bidirectional OMOP concept ↔ ICD/SNOMED mapping
+- [ ] **CDM version auto-detection** — v5.3 vs v5.4 schema differences handled
+- [ ] **CLI tool** (feature flag: `cli`): `omop-etl convert --cdm-version 5.4`
+
+### v1.0.0 — Stable API
+
+- [ ] OMOP CDM v5.4 fully covered
+- [ ] Migration guide, MSRV policy, published
+
+---
+
+## `fhir-etl`
+
+FHIR R4 JSON/NDJSON → Arrow, aligned to the `ClinicalEvent` schema.
+Enables ingestion of modern EHR exports and SMART on FHIR data streams.
+
+### v0.1.0 — Core R4 resources
+
+- [ ] **Crate scaffold**
+  - [ ] `crates/fhir-etl/Cargo.toml` (adds `serde_json` + `serde` deps)
+  - [ ] `crates/fhir-etl/src/lib.rs` — module stubs
+  - [ ] `crates/fhir-etl/README.md`, `CHANGELOG.md`
+  - [ ] Add to workspace `members`
+- [ ] **Core resource parsers** (JSON single-resource and NDJSON streaming)
+  - [ ] `Patient` → Arrow (id, birthDate, gender, address)
+  - [ ] `Encounter` → Arrow (id, status, class, period.start/end, subject)
+  - [ ] `Condition` → Arrow (code.coding[0] → ICD via `medcodes`, recordedDate)
+  - [ ] `MedicationRequest` → Arrow (medication, authoredOn, dosageInstruction)
+  - [ ] `MedicationAdministration` → Arrow (medication, effective[x], dosage)
+  - [ ] `Observation` → Arrow (code → LOINC via `medcodes`, value[x], effectiveDateTime)
+  - [ ] `Procedure` → Arrow (code, performed[x])
+- [ ] **NDJSON streaming parser** — line-by-line, no full document load into memory
+- [ ] **Polymorphic type handling** — FHIR `value[x]` variants (valueQuantity, valueString, etc.)
+- [ ] **`ClinicalEvent` schema output** — aligned with `mimic-etl` shared schema
+- [ ] **Tests** — synthetic FHIR R4 JSON fixtures, round-trip validation
+- [ ] **Documentation + release** — version `0.0.0` → `0.1.0`, publish
+
+### v0.2.0 — Bundle + SMART on FHIR
+
+- [ ] **FHIR Bundle parsing** — searchset, transaction, history bundle types
+- [ ] **Pagination** — `Bundle.link[rel=next]` cursor following
+- [ ] **SMART on FHIR client** (feature flag: `smart-auth`)
+  - [ ] OAuth2 client credentials flow
+  - [ ] `FhirClient::search(resource, params)` → streaming Arrow output
+- [ ] **`medcodes` integration** (feature flag) — FHIR coding systems ↔ ICD/SNOMED/LOINC
+
+### v0.3.0 — R5 compatibility
+
+- [ ] FHIR R5 resource compatibility layer (additive, no breaking changes to R4 API)
+
+### v1.0.0 — Stable API
+
+- [ ] FHIR R4 fully covered
+- [ ] Migration guide, MSRV policy, published
