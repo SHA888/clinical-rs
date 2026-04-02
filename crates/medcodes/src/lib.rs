@@ -10,8 +10,10 @@
 
 pub mod ccsr;
 pub mod icd10;
+pub mod icd9;
 pub mod types;
 
 pub use ccsr::{CcsrCategory, CcsrContext, CcsrMapping, CcsrToIcd10Cm, Icd10CmToCcsr};
+pub use icd9::Icd9Cm;
 pub use icd10::Icd10Cm;
 pub use types::{Code, CodeSystem, CrossMap, MedCodeError, System};

@@ -374,10 +374,10 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
 
 ### v0.2.0 — Code System Expansion
 
-- [ ] **ICD-9-CM** (frozen Oct 2015 release)
-  - [ ] Code table processing and embedding
-  - [ ] Full `CodeSystem` trait implementation
-  - [ ] Feature flag: `icd9cm`
+- [x] **ICD-9-CM** (frozen Oct 2015 release)
+  - [x] Code table processing and embedding
+  - [x] Full `CodeSystem` trait implementation
+  - [x] Feature flag: `icd9cm`
 - [ ] **ATC** (WHO Collaborating Centre)
   - [ ] 5-level hierarchy (anatomical → chemical substance)
   - [ ] DDD (Defined Daily Dose) as optional metadata

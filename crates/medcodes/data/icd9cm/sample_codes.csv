@@ -1,0 +1,58 @@
+code,description,parent
+001,CHOLERA,
+001.0,Cholera due to Vibrio cholerae 01 biovar cholerae,001
+001.1,Cholera due to Vibrio cholerae 01 biovar eltor,001
+001.9,"Cholera, unspecified",001
+002,TYPHOID AND PARATYPHOID FEVERS,
+002.0,Typhoid fever,002
+002.1,Paratyphoid fever A,002
+002.2,Paratyphoid fever B,002
+002.3,Paratyphoid fever C,002
+002.9,"Paratyphoid fever, unspecified",002
+003,OTHER SALMONELLA INFECTIONS,
+003.0,Salmonella gastroenteritis,003
+003.1,Salmonella septicemia,003
+003.2,Salmonella pneumonia,003
+003.8,Other specified salmonella infections,003
+003.9,Unspecified salmonella infection,003
+004,SHIGELLOSIS,
+004.0,Shigella dysenteriae,004
+004.1,Shigella flexneri,004
+004.2,Shigella boydii,004
+004.3,Shigella sonnei,004
+004.8,Other shigellosis,004
+004.9,"Shigellosis, unspecified",004
+005,OTHER FOOD POISONING (BACTERIAL),
+005.0,Staphylococcal food poisoning,005
+005.1,Botulism,005
+005.2,"Food poisoning (bacterial), unspecified",005
+005.8,Other bacterial food poisoning,005
+005.9,Unspecified food poisoning (bacterial),005
+006,AMEBIASIS,
+006.0,Amebic dysentery (acute),006
+006.1,Chronic intestinal amebiasis,006
+006.2,Amebic liver abscess,006
+006.3,Amebic lung abscess,006
+006.4,Amebic brain abscess,006
+006.5,Amebic hepatitis,006
+006.8,Other amebiasis,006
+006.9,Unspecified amebiasis,006
+007,OTHER INTESTINAL INFECTIOUS DISEASES,
+007.0,Cholera,007
+007.1,Enteritis due to other specified organisms,007
+007.2,"Enteritis, unspecified",007
+007.3,Diarrhea,007
+007.4,"Colitis, enteritis, and gastroenteritis of infectious origin",007
+007.8,Other intestinal infectious diseases,007
+007.9,Unspecified intestinal infectious disease,007
+008,"INTESTINAL INFECTIOUS DISEASES, NOT ELSEWHERE CLASSIFIED",
+008.0,Intestinal infections due to Escherichia coli,008
+008.1,Intestinal infections due to Salmonella,008
+008.2,Intestinal infections due to Shigella,008
+008.3,Intestinal infections due to other specified organisms,008
+008.4,Intestinal infections due to unspecified organism,008
+008.5,Intestinal infections due to other bacterial organisms,008
+008.6,Intestinal infections due to other viral organisms,008
+008.7,Intestinal infections due to other parasitic organisms,008
+008.8,Intestinal infections due to other organisms,008
+008.9,Intestinal infections due to unspecified organism,008

@@ -35,6 +35,7 @@ insta = "1.40"
 [features]
 default = ["icd10cm"]
 icd10cm = []
+icd9cm = []
 serde = ["dep:serde"]
 
 [[bench]]
