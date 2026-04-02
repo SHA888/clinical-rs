@@ -287,9 +287,9 @@ Each crate gets a publishable-but-empty skeleton.
   - [x] Development setup instructions (clone, `rustup`, tool installs)
   - [x] Commit message format (Conventional Commits)
   - [x] PR process: fork → branch → PR → CI pass → review → merge
-  - [ ] How to add a new code system to `medcodes`
-  - [ ] How to add a new dataset parser
-  - [ ] How to add a new task to `clinical-tasks`
+  - [x] How to add a new code system to `medcodes`
+  - [x] How to add a new dataset parser
+  - [x] How to add a new task to `clinical-tasks`
   - [x] Code style: follow `rustfmt.toml`, satisfy clippy pedantic
 - [x] **`SECURITY.md`**
   - [x] Responsible disclosure policy
