@@ -382,9 +382,9 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
   - [x] 5-level hierarchy (anatomical → chemical substance)
   - [x] DDD (Defined Daily Dose) as optional metadata
   - [x] Feature flag: `atc`
-- [ ] **NDC** (FDA National Drug Code Directory)
-  - [ ] Labeler-product-package structure
-  - [ ] Feature flag: `ndc`
+- [x] **NDC** (FDA National Drug Code Directory)
+  - [x] Labeler-product-package structure
+  - [x] Feature flag: `ndc`
 - [ ] **Cross-mappings**
   - [ ] ICD-10-CM → CCS (single-level)
   - [ ] ICD-9-CM → CCS

@@ -14,10 +14,12 @@ pub mod atc;
 pub mod ccsr;
 pub mod icd10;
 pub mod icd9;
+pub mod ndc;
 pub mod types;
 
 pub use atc::{Atc, AtcLevel};
 pub use ccsr::{CcsrCategory, CcsrContext, CcsrMapping, CcsrToIcd10Cm, Icd10CmToCcsr};
 pub use icd9::Icd9Cm;
 pub use icd10::Icd10Cm;
+pub use ndc::Ndc;
 pub use types::{Code, CodeSystem, CrossMap, MedCodeError, System};

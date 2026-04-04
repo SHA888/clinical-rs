@@ -94,7 +94,8 @@ impl CodeSystem for Icd9Cm {
     }
 
     fn normalize(&self, code: &str) -> String {
-        self.normalize(code)
+        // Call the inherent method, not the trait method to avoid recursion
+        Self::normalize(self, code)
     }
 
     fn ancestors(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
@@ -105,10 +106,12 @@ impl CodeSystem for Icd9Cm {
         while let Some(current_code) = current {
             if let Some(&Some(parent)) = self.parents.get(current_code) {
                 if let Some(&description) = self.descriptions.get(parent) {
-                    ancestors.push(Code::new(System::Icd9Cm, parent, description));
+                    ancestors.push(Code::new(System::Icd9Cm, parent.to_string(), description));
                     current = Some(parent);
                 } else {
-                    break;
+                    return Err(MedCodeError::data(format!(
+                        "Parent {parent} exists but has no description"
+                    )));
                 }
             } else {
                 break;
@@ -142,9 +145,15 @@ impl CodeSystem for Icd9Cm {
 
         if let Some(&Some(parent)) = self.parents.get(normalized.as_str()) {
             if let Some(&description) = self.descriptions.get(parent) {
-                Ok(Some(Code::new(System::Icd9Cm, parent, description)))
+                Ok(Some(Code::new(
+                    System::Icd9Cm,
+                    parent.to_string(),
+                    description,
+                )))
             } else {
-                Ok(None)
+                Err(MedCodeError::data(format!(
+                    "Parent {parent} exists but has no description"
+                )))
             }
         } else {
             Ok(None)
@@ -217,8 +226,9 @@ mod tests {
         // 3-digit codes should not have dots added
         assert_eq!(icd9.normalize("001"), "001");
         assert_eq!(icd9.normalize("V01"), "V01");
-        // 4-digit codes get dot added
+        // 4-digit codes get dot added if they look like subcategories
         assert_eq!(icd9.normalize("E800"), "E80.0");
         assert_eq!(icd9.normalize("E80.0"), "E80.0");
+        // Note: E800->E80.0 conversion assumes E800 is a subcategory of E80
     }
 }

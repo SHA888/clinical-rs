@@ -37,6 +37,7 @@ default = ["icd10cm"]
 icd10cm = []
 icd9cm = []
 atc = []
+ndc = []
 serde = ["dep:serde"]
 
 [[bench]]

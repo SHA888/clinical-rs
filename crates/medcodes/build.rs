@@ -14,14 +14,24 @@ use std::path::Path;
 fn main() {
     // Only check for data changes if data directory exists
     // This allows publishing to crates.io without including large data files
+    setup_rerun_if_changed();
+
+    // Generate all code system data
+    generate_all_data();
+}
+
+fn setup_rerun_if_changed() {
     let data_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/data");
     if Path::new(data_dir).exists() {
         println!("cargo:rerun-if-changed=data/april-1-2026-code-tables-tabular-and-index.zip");
         println!("cargo:rerun-if-changed=data/DXCCSR-v2026-1.zip");
         println!("cargo:rerun-if-changed=data/icd9cm/");
         println!("cargo:rerun-if-changed=data/atc/");
+        println!("cargo:rerun-if-changed=data/ndc/");
     }
+}
 
+fn generate_all_data() {
     // Generate ICD-10-CM data
     let icd10_data_path = concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -109,6 +119,27 @@ fn main() {
         eprintln!("Warning: ATC data file not found at {atc_data_path}");
         eprintln!("Using empty ATC maps.");
         generate_empty_atc_maps();
+    }
+
+    // Generate NDC data
+    let ndc_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/ndc/sample_codes.csv");
+
+    if Path::new(ndc_data_path).exists() {
+        match parse_ndc_csv(ndc_data_path) {
+            Ok((codes, labelers, products, packages)) => {
+                eprintln!("Successfully parsed NDC data, generating maps...");
+                generate_ndc_maps(&codes, &labelers, &products, &packages);
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to parse NDC CSV: {e}");
+                eprintln!("Using empty NDC maps.");
+                generate_empty_ndc_maps();
+            }
+        }
+    } else {
+        eprintln!("Warning: NDC data file not found at {ndc_data_path}");
+        eprintln!("Using empty NDC maps.");
+        generate_empty_ndc_maps();
     }
 }
 
@@ -856,4 +887,206 @@ fn generate_atc_maps(
         panic!("Failed to write ATC data: {e}");
     }
     eprintln!("Generated ATC data at {}", out_path.display());
+}
+/// Parse NDC CSV data.
+fn parse_ndc_csv(
+    path: &str,
+) -> Result<
+    (
+        Vec<(String, String)>,
+        Vec<(String, Option<String>)>,
+        Vec<(String, Option<String>)>,
+        Vec<(String, Option<String>)>,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    let mut reader = csv::Reader::from_path(path)?;
+    let mut codes = Vec::new();
+    let mut labelers = Vec::new();
+    let mut products = Vec::new();
+    let mut packages = Vec::new();
+
+    for result in reader.records() {
+        let record = result?;
+
+        // Parse NDC code (column 0)
+        let ndc_code = record
+            .get(0)
+            .ok_or("Missing NDC code")?
+            .trim()
+            .to_uppercase();
+
+        if ndc_code.is_empty() {
+            continue;
+        }
+
+        // Validate NDC code format before processing
+        if !is_valid_ndc_format(&ndc_code) {
+            eprintln!("Warning: Skipping invalid NDC code format: {ndc_code}");
+            continue;
+        }
+
+        // Parse description (column 1)
+        let description = record
+            .get(1)
+            .ok_or("Missing description")?
+            .trim()
+            .to_string();
+
+        // Parse labeler (column 2)
+        let labeler = record.get(2).unwrap_or("").trim().to_string();
+
+        // Parse product (column 3)
+        let product = record.get(3).unwrap_or("").trim().to_string();
+
+        // Parse package (column 4)
+        let package = record.get(4).unwrap_or("").trim().to_string();
+
+        // Store the code and description
+        codes.push((ndc_code.clone(), description));
+
+        // Store labeler relationship
+        if labeler.is_empty() {
+            labelers.push((ndc_code.clone(), None));
+        } else {
+            labelers.push((ndc_code.clone(), Some(labeler)));
+        }
+
+        // Store product relationship
+        if product.is_empty() {
+            products.push((ndc_code.clone(), None));
+        } else {
+            products.push((ndc_code.clone(), Some(product)));
+        }
+
+        // Store package relationship
+        if package.is_empty() {
+            packages.push((ndc_code, None));
+        } else {
+            packages.push((ndc_code, Some(package)));
+        }
+    }
+
+    Ok((codes, labelers, products, packages))
+}
+
+/// Validate NDC code format.
+fn is_valid_ndc_format(code: &str) -> bool {
+    let parts: Vec<&str> = code.split('-').collect();
+    if parts.len() != 3 {
+        return false;
+    }
+
+    // Check each part contains only digits
+    parts
+        .iter()
+        .all(|part| part.chars().all(|c| c.is_ascii_digit()))
+}
+
+/// Generate empty NDC maps.
+fn generate_empty_ndc_maps() {
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR must be set");
+    let out_path = std::path::Path::new(&out_dir).join("ndc_data.rs");
+
+    let empty_code = r"
+// Generated by build.rs - empty maps
+/// NDC code descriptions (empty - data not loaded)
+pub static NDC_DESCRIPTIONS: phf::Map<&'static str, &'static str> = phf_map! {};
+/// NDC labeler relationships (empty - data not loaded)
+pub static NDC_LABELERS: phf::Map<&'static str, Option<&'static str>> = phf_map! {};
+/// NDC product relationships (empty - data not loaded)
+pub static NDC_PRODUCTS: phf::Map<&'static str, Option<&'static str>> = phf_map! {};
+/// NDC package relationships (empty - data not loaded)
+pub static NDC_PACKAGES: phf::Map<&'static str, Option<&'static str>> = phf_map! {};
+";
+
+    if let Err(e) = std::fs::write(&out_path, empty_code) {
+        panic!("Failed to write empty NDC data: {e}");
+    }
+    eprintln!("Generated empty NDC data at {}", out_path.display());
+}
+
+/// Generate NDC PHF maps.
+fn generate_ndc_maps(
+    codes: &[(String, String)],
+    labelers: &[(String, Option<String>)],
+    products: &[(String, Option<String>)],
+    packages: &[(String, Option<String>)],
+) {
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR must be set");
+    let out_path = std::path::Path::new(&out_dir).join("ndc_data.rs");
+
+    let mut output = String::new();
+    output.push_str("// Generated by build.rs - do not edit\n");
+    output.push_str("use phf::phf_map;\n\n");
+
+    // Generate descriptions map
+    output.push_str("/// NDC code descriptions.\n");
+    output.push_str("/// Maps NDC codes to their drug descriptions.\n");
+    output.push_str(
+        "pub static NDC_DESCRIPTIONS: phf::Map<&'static str, &'static str> = phf_map! {\n",
+    );
+    for (code, description) in codes {
+        let _ = writeln!(output, "    \"{code}\" => \"{description}\",");
+    }
+    output.push_str("};\n\n");
+
+    // Generate labelers map
+    output.push_str("/// NDC labeler relationships.\n");
+    output.push_str("/// Maps NDC codes to their labeler codes.\n");
+    output.push_str(
+        "pub static NDC_LABELERS: phf::Map<&'static str, Option<&'static str>> = phf_map! {\n",
+    );
+    for (code, labeler) in labelers {
+        match labeler {
+            Some(labeler) => {
+                let _ = writeln!(output, "    \"{code}\" => Some(\"{labeler}\"),");
+            }
+            None => {
+                let _ = writeln!(output, "    \"{code}\" => None,");
+            }
+        }
+    }
+    output.push_str("};\n\n");
+
+    // Generate products map
+    output.push_str("/// NDC product relationships.\n");
+    output.push_str("/// Maps NDC codes to their product codes.\n");
+    output.push_str(
+        "pub static NDC_PRODUCTS: phf::Map<&'static str, Option<&'static str>> = phf_map! {\n",
+    );
+    for (code, product) in products {
+        match product {
+            Some(product) => {
+                let _ = writeln!(output, "    \"{code}\" => Some(\"{product}\"),");
+            }
+            None => {
+                let _ = writeln!(output, "    \"{code}\" => None,");
+            }
+        }
+    }
+    output.push_str("};\n\n");
+
+    // Generate packages map
+    output.push_str("/// NDC package relationships.\n");
+    output.push_str("/// Maps NDC codes to their package codes.\n");
+    output.push_str(
+        "pub static NDC_PACKAGES: phf::Map<&'static str, Option<&'static str>> = phf_map! {\n",
+    );
+    for (code, package) in packages {
+        match package {
+            Some(package) => {
+                let _ = writeln!(output, "    \"{code}\" => Some(\"{package}\"),");
+            }
+            None => {
+                let _ = writeln!(output, "    \"{code}\" => None,");
+            }
+        }
+    }
+    output.push_str("};\n");
+
+    if let Err(e) = std::fs::write(&out_path, output) {
+        panic!("Failed to write NDC data: {e}");
+    }
+    eprintln!("Generated NDC data at {}", out_path.display());
 }
