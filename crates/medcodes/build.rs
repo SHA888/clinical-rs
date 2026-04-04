@@ -19,6 +19,7 @@ fn main() {
         println!("cargo:rerun-if-changed=data/april-1-2026-code-tables-tabular-and-index.zip");
         println!("cargo:rerun-if-changed=data/DXCCSR-v2026-1.zip");
         println!("cargo:rerun-if-changed=data/icd9cm/");
+        println!("cargo:rerun-if-changed=data/atc/");
     }
 
     // Generate ICD-10-CM data
@@ -87,6 +88,27 @@ fn main() {
         eprintln!("Warning: ICD-9-CM data file not found at {icd9_data_path}");
         eprintln!("Using empty ICD-9-CM maps.");
         generate_empty_icd9_maps();
+    }
+
+    // Generate ATC data
+    let atc_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/atc/sample_codes.csv");
+
+    if Path::new(atc_data_path).exists() {
+        match parse_atc_csv(atc_data_path) {
+            Ok((codes, parents, children, ddd)) => {
+                eprintln!("Successfully parsed ATC data, generating maps...");
+                generate_atc_maps(&codes, &parents, &children, &ddd);
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to parse ATC CSV: {e}");
+                eprintln!("Using empty ATC maps.");
+                generate_empty_atc_maps();
+            }
+        }
+    } else {
+        eprintln!("Warning: ATC data file not found at {atc_data_path}");
+        eprintln!("Using empty ATC maps.");
+        generate_empty_atc_maps();
     }
 }
 
@@ -606,4 +628,232 @@ fn generate_icd9_maps(
         panic!("Failed to write ICD-9-CM data: {e}");
     }
     eprintln!("Generated ICD-9-CM data at {}", out_path.display());
+}
+
+// ATC data structures and parsing
+
+fn parse_atc_csv(
+    path: &str,
+) -> Result<
+    (
+        Vec<(String, String)>,
+        Vec<(String, Option<String>)>,
+        HashMap<String, Vec<String>>,
+        Vec<(String, String)>,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    let mut reader = csv::Reader::from_path(path)?;
+    let mut codes = Vec::new();
+    let mut parents = Vec::new();
+    let mut children: HashMap<String, Vec<String>> = HashMap::new();
+    let mut ddd = Vec::new();
+
+    for result in reader.records() {
+        let record = result?;
+
+        // Parse code (column 0)
+        let code = record
+            .get(0)
+            .ok_or("Missing ATC code")?
+            .trim()
+            .to_uppercase();
+
+        if code.is_empty() {
+            continue;
+        }
+
+        // Validate ATC code format before processing
+        if !is_valid_atc_format(&code) {
+            eprintln!("Warning: Skipping invalid ATC code format: {}", code);
+            continue;
+        }
+
+        // Parse description (column 1)
+        let description = record
+            .get(1)
+            .ok_or("Missing description")?
+            .trim()
+            .to_string();
+
+        // Parse parent (column 2) - may be empty for top-level codes
+        let parent = record.get(2).unwrap_or("").trim().to_string();
+
+        // Parse DDD (column 3) - optional
+        let ddd_value = record.get(3).unwrap_or("").trim().to_string();
+
+        // Store the code and description
+        codes.push((code.clone(), description));
+
+        // Store DDD if present
+        if !ddd_value.is_empty() {
+            ddd.push((code.clone(), ddd_value));
+        }
+
+        // Store parent relationship
+        if parent.is_empty() {
+            parents.push((code, None));
+        } else {
+            parents.push((code.clone(), Some(parent.clone())));
+            // Add to parent's children list
+            children.entry(parent).or_insert_with(Vec::new).push(code);
+        }
+    }
+
+    Ok((codes, parents, children, ddd))
+}
+
+/// Validate ATC code format (same logic as in atc/mod.rs but without needing the struct)
+fn is_valid_atc_format(code: &str) -> bool {
+    let bytes = code.as_bytes();
+
+    if bytes.is_empty() || bytes.len() > 7 {
+        return false;
+    }
+
+    // First character must be an uppercase letter
+    if !bytes[0].is_ascii_uppercase() {
+        return false;
+    }
+
+    // Check based on length
+    match bytes.len() {
+        1 => true, // Just the anatomical group (e.g., "C")
+        3 => {
+            // Anatomical + 2 digits (e.g., "C10")
+            bytes[1].is_ascii_digit() && bytes[2].is_ascii_digit()
+        }
+        4 => {
+            // + 1 letter (e.g., "C10A")
+            bytes[1].is_ascii_digit() && bytes[2].is_ascii_digit() && bytes[3].is_ascii_uppercase()
+        }
+        5 => {
+            // + 1 letter (e.g., "C10AA")
+            bytes[1].is_ascii_digit()
+                && bytes[2].is_ascii_digit()
+                && bytes[3].is_ascii_uppercase()
+                && bytes[4].is_ascii_uppercase()
+        }
+        7 => {
+            // + 2 digits (e.g., "C10AA01")
+            bytes[1].is_ascii_digit()
+                && bytes[2].is_ascii_digit()
+                && bytes[3].is_ascii_uppercase()
+                && bytes[4].is_ascii_uppercase()
+                && bytes[5].is_ascii_digit()
+                && bytes[6].is_ascii_digit()
+        }
+        _ => false, // Invalid length (2, 6)
+    }
+}
+
+fn generate_empty_atc_maps() {
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR must be set");
+    let out_path = std::path::Path::new(&out_dir).join("atc_data.rs");
+
+    let empty_code = r"
+// Generated by build.rs - empty ATC maps
+/// ATC code descriptions (empty - data not loaded)
+pub static ATC_DESCRIPTIONS: phf::Map<&'static str, &'static str> = phf_map! {};
+/// ATC parent code mapping (empty - data not loaded)
+pub static ATC_PARENTS: phf::Map<&'static str, Option<&'static str>> = phf_map! {};
+/// ATC child code mapping (empty - data not loaded)
+pub static ATC_CHILDREN: phf::Map<&'static str, &'static [&'static str]> = phf_map! {};
+/// ATC DDD values (empty - data not loaded)
+pub static ATC_DDD_VALUES: phf::Map<&'static str, &'static str> = phf_map! {};
+";
+
+    if let Err(e) = std::fs::write(&out_path, empty_code) {
+        panic!("Failed to write empty ATC maps: {e}");
+    }
+    eprintln!("Generated empty ATC maps at {}", out_path.display());
+}
+
+fn generate_atc_maps(
+    codes: &[(String, String)],
+    parents: &[(String, Option<String>)],
+    children: &HashMap<String, Vec<String>>,
+    ddd: &[(String, String)],
+) {
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR must be set");
+    let out_path = std::path::Path::new(&out_dir).join("atc_data.rs");
+
+    eprintln!("Parsed {} ATC codes", codes.len());
+    eprintln!("Found {} parent-child relationships", children.len());
+    eprintln!("Found {} DDD values", ddd.len());
+
+    // Generate Rust code
+    let mut output = String::new();
+    output.push_str("// Generated by build.rs from ATC data\n\n");
+
+    // Generate descriptions map
+    output.push_str("/// ATC code descriptions.\n");
+    output.push_str("/// Generated from ATC sample data.\n");
+    output.push_str(
+        "pub static ATC_DESCRIPTIONS: phf::Map<&'static str, &'static str> = phf_map! {\n",
+    );
+    for (code, desc) in codes {
+        let escaped_desc = desc
+            .replace('\\', "\\\\")
+            .replace('"', "\\\"")
+            .replace('\n', "\\n")
+            .replace('\r', "\\r")
+            .replace('\t', "\\t");
+        let _ = writeln!(output, "    \"{code}\" => \"{escaped_desc}\",");
+    }
+    output.push_str("};\n\n");
+
+    // Generate parents map
+    output.push_str("/// ATC parent code mapping for hierarchy traversal.\n");
+    output.push_str("/// Maps normalized codes to their immediate parent codes.\n");
+    output.push_str(
+        "pub static ATC_PARENTS: phf::Map<&'static str, Option<&'static str>> = phf_map! {\n",
+    );
+    for (code, parent) in parents {
+        match parent {
+            None => {
+                let _ = writeln!(output, "    \"{code}\" => None,");
+            }
+            Some(p) => {
+                let _ = writeln!(output, "    \"{code}\" => Some(\"{p}\"),");
+            }
+        }
+    }
+    output.push_str("};\n\n");
+
+    // Generate children map
+    output.push_str("/// ATC child code mapping for hierarchy traversal.\n");
+    output.push_str("/// Maps normalized codes to their immediate child codes.\n");
+    output.push_str(
+        "pub static ATC_CHILDREN: phf::Map<&'static str, &'static [&'static str]> = phf_map! {\n",
+    );
+    for (parent, child_list) in children {
+        // Sort and deduplicate child list for deterministic builds
+        let mut sorted_children = child_list.clone();
+        sorted_children.sort();
+        sorted_children.dedup();
+
+        let children_str = sorted_children
+            .iter()
+            .map(|c| format!("\"{c}\""))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let _ = writeln!(output, "    \"{parent}\" => &[{children_str}],");
+    }
+    output.push_str("};\n\n");
+
+    // Generate DDD values map
+    output.push_str("/// ATC DDD (Defined Daily Dose) values.\n");
+    output.push_str("/// Maps ATC codes to their DDD values.\n");
+    output
+        .push_str("pub static ATC_DDD_VALUES: phf::Map<&'static str, &'static str> = phf_map! {\n");
+    for (code, ddd_value) in ddd {
+        let _ = writeln!(output, "    \"{code}\" => \"{ddd_value}\",");
+    }
+    output.push_str("};\n");
+
+    if let Err(e) = std::fs::write(&out_path, output) {
+        panic!("Failed to write ATC data: {e}");
+    }
+    eprintln!("Generated ATC data at {}", out_path.display());
 }

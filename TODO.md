@@ -378,10 +378,10 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
   - [x] Code table processing and embedding
   - [x] Full `CodeSystem` trait implementation
   - [x] Feature flag: `icd9cm`
-- [ ] **ATC** (WHO Collaborating Centre)
-  - [ ] 5-level hierarchy (anatomical → chemical substance)
-  - [ ] DDD (Defined Daily Dose) as optional metadata
-  - [ ] Feature flag: `atc`
+- [x] **ATC** (WHO Collaborating Centre)
+  - [x] 5-level hierarchy (anatomical → chemical substance)
+  - [x] DDD (Defined Daily Dose) as optional metadata
+  - [x] Feature flag: `atc`
 - [ ] **NDC** (FDA National Drug Code Directory)
   - [ ] Labeler-product-package structure
   - [ ] Feature flag: `ndc`
