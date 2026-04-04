@@ -232,9 +232,9 @@ fn test_atc_cross_system_consistency() {
     for code in test_codes {
         if atc.is_valid(code) {
             let result = atc.lookup(code);
-            assert!(result.is_ok(), "Valid code should be lookup-able: {}", code);
+            assert!(result.is_ok(), "Valid code should be lookup-able: {code}");
 
-            let code_obj = result.unwrap();
+            let code_obj = result.expect("Valid code lookup should succeed");
             assert_eq!(code_obj.code(), code.to_uppercase());
             assert!(!code_obj.description().is_empty());
         }
@@ -249,15 +249,16 @@ fn test_atc_performance_large_hierarchy() {
     let start = std::time::Instant::now();
 
     // Get all descendants from top level
-    let descendants = atc.descendants("C").unwrap();
+    let descendants = atc
+        .descendants("C")
+        .expect("Descendants lookup should succeed");
 
     let duration = start.elapsed();
 
     // Should complete quickly (less than 100ms for reasonable performance)
     assert!(
         duration.as_millis() < 100,
-        "Hierarchy traversal should be fast, took: {:?}",
-        duration
+        "Hierarchy traversal should be fast, took: {duration:?}"
     );
 
     // Should have some descendants
@@ -275,7 +276,7 @@ fn test_atc_error_messages() {
     let result = atc.lookup("INVALID");
     assert!(result.is_err());
 
-    let error = result.unwrap_err();
+    let error = result.expect_err("Invalid code lookup should fail");
     let error_str = error.to_string();
     assert!(error_str.contains("INVALID"));
     assert!(error_str.contains("ATC"));
@@ -294,8 +295,7 @@ fn test_atc_ddd_method_consistency() {
 
         assert_eq!(
             ddd1, ddd2,
-            "Both DDD methods should return same result for {}",
-            code
+            "Both DDD methods should return same result for {code}"
         );
     }
 }

@@ -200,7 +200,7 @@ fn test_atc_diabetes_hierarchy() {
     // Should be part of biguanides (A10BA)
     let parent = atc.parent("A10BA02").unwrap();
     assert!(parent.is_some());
-    assert_eq!(parent.unwrap().code(), "A10BA");
+    assert_eq!(parent.expect("Parent should exist").code(), "A10BA");
 }
 
 #[test]
@@ -210,15 +210,15 @@ fn test_atc_antithrombotic_agents() {
     // Test warfarin DDD
     let ddd = atc.ddd("B01AA03");
     assert!(ddd.is_some());
-    assert_eq!(ddd.unwrap(), "7.5mg");
+    assert_eq!(ddd.expect("DDD should exist"), "7.5mg");
 
     // Test aspirin DDD
     let ddd = atc.ddd("B01AC06");
     assert!(ddd.is_some());
-    assert_eq!(ddd.unwrap(), "100mg");
+    assert_eq!(ddd.expect("DDD should exist"), "100mg");
 
     // Test clopidogrel DDD
     let ddd = atc.ddd("B01AC04");
     assert!(ddd.is_some());
-    assert_eq!(ddd.unwrap(), "75mg");
+    assert_eq!(ddd.expect("DDD should exist"), "75mg");
 }

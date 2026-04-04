@@ -665,7 +665,7 @@ fn parse_atc_csv(
 
         // Validate ATC code format before processing
         if !is_valid_atc_format(&code) {
-            eprintln!("Warning: Skipping invalid ATC code format: {}", code);
+            eprintln!("Warning: Skipping invalid ATC code format: {code}");
             continue;
         }
 

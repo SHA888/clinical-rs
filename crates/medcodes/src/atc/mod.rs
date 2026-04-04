@@ -248,8 +248,7 @@ impl CodeSystem for Atc {
                     current = Some(parent);
                 } else {
                     return Err(MedCodeError::data(format!(
-                        "Parent {} exists but has no description",
-                        parent
+                        "Parent {parent} exists but has no description"
                     )));
                 }
             } else {
@@ -278,8 +277,7 @@ impl CodeSystem for Atc {
                         to_visit.push(child);
                     } else {
                         return Err(MedCodeError::data(format!(
-                            "Child {} exists but has no description",
-                            child
+                            "Child {child} exists but has no description"
                         )));
                     }
                 }
@@ -305,8 +303,7 @@ impl CodeSystem for Atc {
                 )))
             } else {
                 Err(MedCodeError::data(format!(
-                    "Parent {} exists but has no description",
-                    parent
+                    "Parent {parent} exists but has no description"
                 )))
             }
         } else {
@@ -329,8 +326,7 @@ impl CodeSystem for Atc {
                     result.push(Code::new(System::Atc, child.to_string(), description));
                 } else {
                     return Err(MedCodeError::data(format!(
-                        "Child {} exists but has no description",
-                        child
+                        "Child {child} exists but has no description"
                     )));
                 }
             }

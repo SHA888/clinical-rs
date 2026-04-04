@@ -70,7 +70,7 @@ impl Icd9Cm {
             && let Some(three_digits) = normalized.get(0..3)
             && let Some(last_digit) = normalized.get(3..4)
         {
-            normalized = format!("{}.{}", three_digits, last_digit);
+            normalized = format!("{three_digits}.{last_digit}");
         }
 
         normalized
