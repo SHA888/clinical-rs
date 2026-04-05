@@ -26,12 +26,22 @@ fn setup_rerun_if_changed() {
         println!("cargo:rerun-if-changed=data/april-1-2026-code-tables-tabular-and-index.zip");
         println!("cargo:rerun-if-changed=data/DXCCSR-v2026-1.zip");
         println!("cargo:rerun-if-changed=data/icd9cm/");
+        println!("cargo:rerun-if-changed=data/ccs/");
         println!("cargo:rerun-if-changed=data/atc/");
         println!("cargo:rerun-if-changed=data/ndc/");
     }
 }
 
 fn generate_all_data() {
+    generate_icd10cm_data();
+    generate_ccsr_data();
+    generate_ccs_data();
+    generate_icd9cm_data();
+    generate_atc_data();
+    generate_ndc_data();
+}
+
+fn generate_icd10cm_data() {
     // Generate ICD-10-CM data
     let icd10_data_path = concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -56,7 +66,9 @@ fn generate_all_data() {
         eprintln!("Extract the ZIP file to populate ICD-10-CM codes, or use with-data feature.");
         generate_empty_maps();
     }
+}
 
+fn generate_ccsr_data() {
     // Generate CCSR mapping data
     let ccsr_csv_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/DXCCSR_v2026-1.csv");
 
@@ -78,7 +90,54 @@ fn generate_all_data() {
         eprintln!("Extract the ZIP file to populate CCSR mappings, or use with-data feature.");
         generate_empty_ccsr_maps();
     }
+}
 
+fn generate_ccs_data() {
+    // Generate CCS mapping data
+    let icd10cm_ccs_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/ccs/icd10cm_mappings.csv");
+    let icd9cm_ccs_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/ccs/icd9cm_mappings.csv");
+
+    let mut icd10cm_ccs_mappings = Vec::new();
+    let mut icd9cm_ccs_mappings = Vec::new();
+
+    if Path::new(icd10cm_ccs_path).exists() {
+        match parse_ccs_csv(icd10cm_ccs_path) {
+            Ok(mappings) => {
+                eprintln!("Successfully parsed ICD-10-CM to CCS data");
+                icd10cm_ccs_mappings = mappings;
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to parse ICD-10-CM CCS CSV: {e}");
+            }
+        }
+    } else {
+        eprintln!("Warning: ICD-10-CM CCS data file not found at {icd10cm_ccs_path}");
+    }
+
+    if Path::new(icd9cm_ccs_path).exists() {
+        match parse_ccs_csv(icd9cm_ccs_path) {
+            Ok(mappings) => {
+                eprintln!("Successfully parsed ICD-9-CM to CCS data");
+                icd9cm_ccs_mappings = mappings;
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to parse ICD-9-CM CCS CSV: {e}");
+            }
+        }
+    } else {
+        eprintln!("Warning: ICD-9-CM CCS data file not found at {icd9cm_ccs_path}");
+    }
+
+    // Generate CCS data if we have any mappings
+    if !icd10cm_ccs_mappings.is_empty() || !icd9cm_ccs_mappings.is_empty() {
+        generate_ccs_maps(&icd10cm_ccs_mappings, &icd9cm_ccs_mappings);
+    } else {
+        eprintln!("Using empty CCS mappings.");
+        generate_empty_ccs_maps();
+    }
+}
+
+fn generate_icd9cm_data() {
     // Generate ICD-9-CM data
     let icd9_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/icd9cm/sample_codes.csv");
 
@@ -99,7 +158,9 @@ fn generate_all_data() {
         eprintln!("Using empty ICD-9-CM maps.");
         generate_empty_icd9_maps();
     }
+}
 
+fn generate_atc_data() {
     // Generate ATC data
     let atc_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/atc/sample_codes.csv");
 
@@ -120,7 +181,9 @@ fn generate_all_data() {
         eprintln!("Using empty ATC maps.");
         generate_empty_atc_maps();
     }
+}
 
+fn generate_ndc_data() {
     // Generate NDC data
     let ndc_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/ndc/sample_codes.csv");
 
@@ -1089,4 +1152,135 @@ fn generate_ndc_maps(
         panic!("Failed to write NDC data: {e}");
     }
     eprintln!("Generated NDC data at {}", out_path.display());
+}
+
+// CCS data structures and parsing
+
+#[derive(Debug, Clone)]
+struct CcsMapping {
+    code: String,
+    ccs_code: String,
+}
+
+fn parse_ccs_csv(path: &str) -> Result<Vec<CcsMapping>, Box<dyn std::error::Error>> {
+    let mut reader = csv::Reader::from_path(path)?;
+    let mut mappings = Vec::new();
+
+    for result in reader.records() {
+        let record = result?;
+
+        // Parse code (column 0)
+        let code = record.get(0).ok_or("Missing code")?.trim().to_uppercase();
+
+        if code.is_empty() {
+            continue;
+        }
+
+        // Parse CCS code (column 1)
+        let ccs_code = record.get(1).ok_or("Missing CCS code")?.trim().to_string();
+
+        if ccs_code.is_empty() {
+            continue;
+        }
+
+        mappings.push(CcsMapping { code, ccs_code });
+    }
+
+    eprintln!("Parsed {} CCS mappings", mappings.len());
+    Ok(mappings)
+}
+
+fn generate_empty_ccs_maps() {
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR must be set");
+    let out_path = std::path::Path::new(&out_dir).join("ccs_data.rs");
+
+    let empty_code = r"
+// Generated by build.rs - empty CCS maps
+/// CCS category descriptions (empty - data not loaded)
+pub static CCS_DESCRIPTIONS: phf::Map<&'static str, &'static str> = phf_map! {};
+
+/// ICD-10-CM to CCS mappings (empty - data not loaded)
+pub static ICD10CM_TO_CCS_MAPPINGS: phf::Map<&'static str, &'static str> = phf_map! {};
+
+/// ICD-9-CM to CCS mappings (empty - data not loaded)
+pub static ICD9CM_TO_CCS_MAPPINGS: phf::Map<&'static str, &'static str> = phf_map! {};
+";
+
+    if let Err(e) = std::fs::write(&out_path, empty_code) {
+        panic!("Failed to write empty CCS maps: {e}");
+    }
+    eprintln!("Generated empty CCS maps at {}", out_path.display());
+}
+
+fn generate_ccs_maps(icd10cm_mappings: &[CcsMapping], icd9cm_mappings: &[CcsMapping]) {
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR must be set");
+    let out_path = std::path::Path::new(&out_dir).join("ccs_data.rs");
+
+    let mut output = String::new();
+    output.push_str("// Generated by build.rs from CCS data\n\n");
+
+    // Collect all unique CCS codes from both mappings
+    let mut all_ccs_codes: std::collections::HashSet<&String> = std::collections::HashSet::new();
+    for mapping in icd10cm_mappings {
+        let _ = all_ccs_codes.insert(&mapping.ccs_code);
+    }
+    for mapping in icd9cm_mappings {
+        let _ = all_ccs_codes.insert(&mapping.ccs_code);
+    }
+
+    // Generate CCS descriptions (using placeholder descriptions based on category numbers)
+    output.push_str("/// CCS category descriptions.\n");
+    output.push_str("/// Generated from CCS mapping data.\n");
+    output.push_str(
+        "pub static CCS_DESCRIPTIONS: phf::Map<&'static str, &'static str> = phf_map! {\n",
+    );
+
+    let mut ccs_codes: Vec<_> = all_ccs_codes.iter().collect();
+    ccs_codes.sort();
+
+    for ccs_code in ccs_codes {
+        let description = format!("CCS Category {}", ccs_code);
+        let _ = writeln!(output, "    \"{}\" => \"{}\",", ccs_code, description);
+    }
+    output.push_str("};\n\n");
+
+    // Generate ICD-10-CM to CCS mappings
+    output.push_str("/// ICD-10-CM to CCS mappings.\n");
+    output.push_str("/// Maps ICD-10-CM codes to CCS categories.\n");
+    output.push_str(
+        "pub static ICD10CM_TO_CCS_MAPPINGS: phf::Map<&'static str, &'static str> = phf_map! {\n",
+    );
+    for mapping in icd10cm_mappings {
+        let _ = writeln!(
+            output,
+            "    \"{}\" => \"{}\",",
+            mapping.code, mapping.ccs_code
+        );
+    }
+    output.push_str("};\n\n");
+
+    // Generate ICD-9-CM to CCS mappings
+    output.push_str("/// ICD-9-CM to CCS mappings.\n");
+    output.push_str("/// Maps ICD-9-CM codes to CCS categories.\n");
+    output.push_str(
+        "pub static ICD9CM_TO_CCS_MAPPINGS: phf::Map<&'static str, &'static str> = phf_map! {\n",
+    );
+    for mapping in icd9cm_mappings {
+        let _ = writeln!(
+            output,
+            "    \"{}\" => \"{}\",",
+            mapping.code, mapping.ccs_code
+        );
+    }
+    output.push_str("};\n");
+
+    if let Err(e) = std::fs::write(&out_path, output) {
+        panic!("Failed to write CCS data: {e}");
+    }
+    eprintln!(
+        "Generated CCS data at {} with {} ICD-10-CM and {} ICD-9-CM mappings",
+        out_path.display(),
+        icd10cm_mappings.len(),
+        icd9cm_mappings.len()
+    );
 }

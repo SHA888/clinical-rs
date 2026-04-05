@@ -387,7 +387,7 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
   - [x] Feature flag: `ndc`
 - [ ] **Cross-mappings**
   - [ ] ICD-10-CM → CCS (single-level)
-  - [ ] ICD-9-CM → CCS
+  - [x] ICD-9-CM → CCS
   - [ ] NDC → ATC
   - [ ] NDC → RxNorm
 - [ ] **Serde support**
