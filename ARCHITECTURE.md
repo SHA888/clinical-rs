@@ -173,6 +173,7 @@ CSV files on disk
 - ✅ Custom task definition via `TaskDefinition` trait
 - ✅ Patient-level train/validation/test splitting
 - ✅ Output as Arrow RecordBatch (features + label columns)
+- ✅ Post-critical-illness longevity signal extraction (senescence, SASP, biological age delta — feature-gated: `longevity`)
 - ❌ No model training, no loss functions, no optimizers
 - ❌ No dataset parsing (consumes Arrow from any ETL source)
 
@@ -230,6 +231,88 @@ pub struct TaskWindows {
 
 ---
 
+#### `longevity` module (feature-gated)
+
+Feature flag: `longevity`. Zero compile cost when disabled. Enable with `features = ["longevity"]` in your `Cargo.toml`.
+
+**Scope:** Post-critical-illness biological age acceleration. ICU populations function as a compressed aging model — sepsis-induced senescence and SASP elevation are measurable on a weeks-to-months timescale using the same clinical data substrate already present in `clinical-tasks`. This module does not represent a general longevity platform; it represents the aging-consequence surface of critical illness and tropical infectious disease, with pre-specified expansion criteria to post-infectious outpatient populations.
+
+Module layout within `clinical-tasks`:
+
+```
+clinical-tasks/src/
+  longevity/
+    mod.rs          ← pub use, feature-gated re-exports
+    signals.rs      ← LongevitySignals struct, field definitions
+    senescence.rs   ← SaspComposite, SenescenceScore, FunctionalTrajectory
+    clock.rs        ← BiologicalAgeDelta, CalibrationStatus stub
+```
+
+**Longevity module scope boundaries:**
+- ✅ SASP composite score (IL-6, IL-8, MMP-3, GDF-15 weighted panel)
+- ✅ Senescence score (p16^INK4a relative expression + SA-β-gal proxy fields)
+- ✅ Post-ICU functional trajectory classification (PICS / recovering / recovered)
+- ✅ Biological age delta storage with explicit calibration provenance
+- ❌ No clock algorithm implementation — pending Southeast Asian cohort recalibration
+- ❌ No in vitro bench data schema — separate concern, not clinical ETL
+- ❌ No population-level biological age inference until `CalibrationStatus::Validated`
+
+**Key types:**
+
+```rust
+#[cfg(feature = "longevity")]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct LongevitySignals {
+    pub biological_age_delta: Option<BiologicalAgeDelta>,
+    pub gdf15_pgml:            Option<f32>,
+    pub il6_pgml:              Option<f32>,
+    pub il8_pgml:              Option<f32>,
+    pub mmp3_ngml:             Option<f32>,
+    pub p16_relative_expression: Option<f32>,
+    pub sasp_composite_score:  Option<SaspComposite>,
+    pub post_icu_functional_trajectory: Option<FunctionalTrajectory>,
+}
+
+/// Biological age deviation from chronological age.
+///
+/// # Calibration status
+/// All major DNA methylation clocks (Horvath, PhenoAge, GrimAge) were trained on
+/// European-ancestry cohorts. No validated Southeast Asian calibration exists as of
+/// 2025. This field MUST NOT be used for population-level inference until
+/// recalibration is complete. Store raw GrimAge output as a provisional signal only.
+#[cfg(feature = "longevity")]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct BiologicalAgeDelta {
+    pub value:               f32,
+    pub clock_version:       ClockVersion,
+    pub calibration_status:  CalibrationStatus,
+}
+
+#[cfg(feature = "longevity")]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub enum CalibrationStatus {
+    /// European-trained clock applied to SEA population — systematic bias unquantified.
+    Uncalibrated,
+    /// Local cohort collected; validation analysis pending.
+    PendingValidation,
+    /// Validated against a local cohort of specified size.
+    Validated { cohort_n: u32 },
+}
+
+#[cfg(feature = "longevity")]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub enum FunctionalTrajectory {
+    /// Persistent Inflammation-Immunosuppression and Catabolism Syndrome.
+    Pics,
+    Recovering,
+    Recovered,
+}
+```
+
+**Extraction criteria for `longevity-rs` crate split:** The module graduates to a standalone `longevity-rs` crate when any of the following conditions are met: (1) a biological age clock algorithm is implemented, creating a distinct dependency surface; (2) `biokhor-efferent` needs `SenescenceScore` without importing the full `clinical-tasks` dependency tree; (3) a bench-derived data schema (WI-38 passage number, SA-β-gal OD, conditioned medium cytokines) diverges from the clinical event schema. Until then, the feature flag preserves the seam without premature extraction.
+
+---
+
 ## Cross-Crate Data Flow
 
 ### End-to-end: MIMIC-IV → mortality prediction samples
@@ -284,7 +367,8 @@ let categories = mapper.map("A41.9")?;  // ["INF003"]
 clinical-tasks
     ├── arrow
     ├── chrono
-    └── medcodes (optional, for code grouping)
+    ├── medcodes (optional, for code grouping)
+    └── [longevity feature] → no additional deps (arithmetic + struct only)
 
 mimic-etl
     ├── arrow
@@ -301,7 +385,7 @@ medcodes
     └── thiserror
 ```
 
-`medcodes` is the leaf dependency — it depends on nothing in this workspace. Both `mimic-etl` and `clinical-tasks` optionally depend on `medcodes` via Cargo feature flags.
+`medcodes` is the leaf dependency — it depends on nothing in this workspace. Both `mimic-etl` and `clinical-tasks` optionally depend on `medcodes` via Cargo feature flags. The `longevity` feature within `clinical-tasks` introduces no additional crate dependencies at MVP; all types are arithmetic, enum, and struct over existing primitives.
 
 ---
 
@@ -331,6 +415,10 @@ MIMIC-IV `LABEVENTS` alone is ~125M rows. Materializing the full table requires 
 
 `mimic-etl` knows MIMIC-specific table schemas, column names, and data quirks (e.g., MIMIC-III uses `HADM_ID`, MIMIC-IV uses `hadm_id`). Mixing this with eICU or OMOP parsing in one crate creates a leaky abstraction. Separate crates keep each parser focused. The shared `ClinicalEvent` Arrow schema is the unifying contract, not shared code.
 
+### Why a feature-gated module rather than a standalone `longevity-rs` crate?
+
+At MVP, the longevity module contains structs and arithmetic over existing clinical signal types — no novel algorithm, no distinct dependency surface. A standalone crate at this stage would wrap struct definitions without justifying the abstraction boundary. The feature flag (`longevity`) preserves the seam explicitly: the public interface is defined now, the extraction is mechanical when the boundary becomes real (clock algorithm, bench data schema, or downstream crate that needs `SenescenceScore` without `clinical-tasks`). See extraction criteria above.
+
 ---
 
 ## Future Crates (Planned, Not Yet Started)
@@ -344,5 +432,6 @@ MIMIC-IV `LABEVENTS` alone is ~125M rows. Materializing the full table requires 
 | `clinical-metrics` | AUROC, PR-AUC, NRI, DCA, Brier score, C-statistic |
 | `clinical-calib` | Conformal prediction for clinical model calibration |
 | `clinical-inference` | ONNX Runtime wrapper for clinical model serving on Arrow batches |
+| `longevity-rs` | Standalone biological age clock algorithms + bench data schema; extracted from `clinical-tasks::longevity` when SEA clock recalibration creates a distinct dependency surface |
 
 These will be added to this workspace as development progresses. Each follows the same principles: Arrow-native, streaming-first, independently publishable.

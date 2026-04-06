@@ -195,6 +195,7 @@ Each crate gets a publishable-but-empty skeleton.
   [features]
   default = []
   medcodes = ["dep:medcodes"]
+  longevity = []   # post-critical-illness biological age acceleration signals
 
   [[bench]]
   name = "windowing"
@@ -532,13 +533,62 @@ Minimal task windowing engine with one fully implemented task.
   - [x] Rustdoc, `README.md` with end-to-end example, `CHANGELOG.md`
   - [x] Version bump `0.0.2-rc.2` → `0.1.0`, publish
 
-### v0.2.0 — Task Expansion
+### v0.2.0 — Task Expansion + Longevity Module
 
 - [ ] **30-day readmission prediction** (binary, anchor: discharge)
 - [ ] **Length of stay prediction** (multiclass bucketed + regression variant)
 - [ ] **Drug recommendation** (multi-label, optional DDI matrix)
 - [ ] **Optional `medcodes` integration** (feature flag, code grouping for features)
 - [ ] **Custom task API** (docs + example for `TaskDefinition` implementors)
+- [ ] **Longevity module** (`features = ["longevity"]`) — post-critical-illness biological age acceleration signals
+  - [ ] **Module scaffold**
+    - [ ] `crates/clinical-tasks/src/longevity/mod.rs` — `pub use`, feature-gated re-exports
+    - [ ] `crates/clinical-tasks/src/longevity/signals.rs` — `LongevitySignals` struct, all fields `Option<T>`
+    - [ ] `crates/clinical-tasks/src/longevity/senescence.rs` — `SaspComposite`, `SenescenceScore`, `FunctionalTrajectory`
+    - [ ] `crates/clinical-tasks/src/longevity/clock.rs` — `BiologicalAgeDelta`, `ClockVersion`, `CalibrationStatus` stub
+    - [ ] Feature flag wired: `longevity = []` in `Cargo.toml` (no additional deps at MVP)
+    - [ ] `#[cfg(feature = "longevity")]` on all longevity types and module declaration in `lib.rs`
+  - [ ] **`LongevitySignals` struct** (`signals.rs`)
+    - [ ] `biological_age_delta: Option<BiologicalAgeDelta>`
+    - [ ] `gdf15_pgml: Option<f32>`
+    - [ ] `il6_pgml: Option<f32>`
+    - [ ] `il8_pgml: Option<f32>`
+    - [ ] `mmp3_ngml: Option<f32>`
+    - [ ] `p16_relative_expression: Option<f32>`
+    - [ ] `sasp_composite_score: Option<SaspComposite>`
+    - [ ] `post_icu_functional_trajectory: Option<FunctionalTrajectory>`
+    - [ ] `serde` feature parity: `Serialize`/`Deserialize` via workspace `serde` dep
+  - [ ] **`SaspComposite`** (`senescence.rs`)
+    - [ ] Weighted composite: IL-6 + IL-8 + GDF-15 + MMP-3 (weights TBD from literature; document source)
+    - [ ] `SaspComposite::compute(signals: &LongevitySignals) → Option<SaspComposite>`
+    - [ ] Returns `None` if fewer than 2 of 4 components are present
+  - [ ] **`FunctionalTrajectory`** (`senescence.rs`)
+    - [ ] Variants: `Pics`, `Recovering`, `Recovered`
+    - [ ] Rustdoc: cite Mira et al. 2017 (*Front Immunol*) PICS criteria
+  - [ ] **`BiologicalAgeDelta`** (`clock.rs`)
+    - [ ] Fields: `value: f32`, `clock_version: ClockVersion`, `calibration_status: CalibrationStatus`
+    - [ ] `ClockVersion` enum: `Horvath2013`, `PhenoAge`, `GrimAge2`
+    - [ ] `CalibrationStatus` enum: `Uncalibrated`, `PendingValidation`, `Validated { cohort_n: u32 }`
+    - [ ] Rustdoc on `BiologicalAgeDelta`: mandatory calibration warning — SEA population, unquantified bias
+    - [ ] `CalibrationStatus::Uncalibrated` is the default; no silent use as quantitative output
+  - [ ] **Arrow schema extension** — `LongevitySignals` fields appended as nullable columns to post-ICU task output
+    - [ ] `biological_age_delta` → `Float32` (NULLABLE)
+    - [ ] `calibration_status` → `Utf8` (NULLABLE, enum serialized as string)
+    - [ ] `sasp_composite_score` → `Float32` (NULLABLE)
+    - [ ] `post_icu_functional_trajectory` → `Utf8` (NULLABLE)
+    - [ ] `p16_relative_expression` → `Float32` (NULLABLE)
+  - [ ] **Tests**
+    - [ ] `SaspComposite::compute` returns `None` with fewer than 2 inputs
+    - [ ] `SaspComposite::compute` is deterministic given same inputs
+    - [ ] `CalibrationStatus::Uncalibrated` round-trips through `serde_json`
+    - [ ] Arrow schema extension: longevity columns present when feature enabled, absent when disabled
+    - [ ] Snapshot tests (`insta`): `LongevitySignals` JSON serialization for known inputs
+  - [ ] **Documentation**
+    - [ ] Rustdoc for all public types with examples
+    - [ ] Module-level doc: scope statement (post-critical-illness only, not general longevity)
+    - [ ] Module-level doc: `CalibrationStatus` usage guidance
+    - [ ] Module-level doc: extraction criteria for `longevity-rs` crate split (clock algorithm, bench schema, downstream isolation)
+    - [ ] `CHANGELOG.md` entry: `feat(clinical-tasks): add longevity feature module`
 
 ### v0.3.0 — Sepsis + Advanced Windowing
 
@@ -549,11 +599,16 @@ Minimal task windowing engine with one fully implemented task.
   - [ ] Temporal advantage metric
 - [ ] **Sliding window mode** (samples at regular intervals)
 - [ ] **Feature engineering utilities** (temporal bins, code co-occurrence, lab trends, missingness)
+- [ ] **Longevity: post-infectious outpatient expansion** (pending v0.2.0 ICU module validation)
+  - [ ] Define expansion criteria: do post-ICU SASP signatures appear at lower magnitude in age-matched community controls?
+  - [ ] Add `PostInfectiousOutpatient` variant to `FunctionalTrajectory`
+  - [ ] Schema: `longevity` Arrow columns compatible with non-ICU `ClinicalEvent` anchor (discharge, outpatient visit)
 
 ### v1.0.0 — Stable API
 
 - [ ] `TaskDefinition` trait finalized
 - [ ] All v0.x tasks stable
+- [ ] Longevity module API reviewed; extraction criteria evaluated
 - [ ] Migration guide, MSRV policy, published
 
 ---
@@ -571,6 +626,7 @@ Tracked for roadmap visibility. Will not block any 1.0 release.
 | `clinical-metrics` | AUROC, PR-AUC, NRI, DCA, Brier, C-statistic | — |
 | `clinical-calib` | Conformal prediction for model calibration | `clinical-metrics` |
 | `clinical-inference` | ONNX Runtime wrapper for Arrow batch inference | — |
+| `longevity-rs` | Standalone biological age clock algorithms + bench data schema; extracted from `clinical-tasks::longevity` when SEA clock recalibration or bench data schema creates a distinct dependency surface | `clinical-tasks` |
 
 ---
 

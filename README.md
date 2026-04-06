@@ -22,7 +22,7 @@
 |-------|---------|--------|
 | [`medcodes`](crates/medcodes) | Medical code ontologies, hierarchy traversal, and cross-system mapping (ICD-10, ATC, LOINC, SNOMED CT, etc.) | 🚧 Pre-release |
 | [`mimic-etl`](crates/mimic-etl) | MIMIC-III/IV CSV parser → Apache Arrow RecordBatches with memory-mapped I/O and parallel processing | 🚧 Pre-release |
-| [`clinical-tasks`](crates/clinical-tasks) | Task windowing engine — transforms clinical event streams into ML-ready (features, label) Arrow tables | 🚧 Pre-release |
+| [`clinical-tasks`](crates/clinical-tasks) | Task windowing engine — transforms clinical event streams into ML-ready (features, label) Arrow tables; includes post-critical-illness longevity signal module (feature-gated: `longevity`) | 🚧 Pre-release |
 
 Each crate publishes independently to [crates.io](https://crates.io) and can be used standalone. Together, they form an end-to-end pipeline from raw clinical data to model-ready datasets.
 
@@ -47,6 +47,9 @@ Add the crate(s) you need:
 medcodes = "0.1"         # medical code ontologies
 mimic-etl = "0.1"        # MIMIC-III/IV → Arrow
 clinical-tasks = "0.1"   # task windowing for ML
+
+# Enable post-critical-illness longevity signal module
+clinical-tasks = { version = "0.1", features = ["longevity"] }
 ```
 
 ### Medical code lookup
@@ -96,6 +99,37 @@ let task = MortalityPrediction::new(TaskConfig {
 });
 
 let samples = task.apply(events)?;  // Iterator<Item = RecordBatch> with features + label columns
+```
+
+### Longevity signals (post-critical-illness, feature-gated)
+
+Requires `features = ["longevity"]`. Scoped to post-critical-illness biological age
+acceleration — not a general longevity platform. `CalibrationStatus` is first-class:
+it propagates into downstream hypothesis confidence scoring. All clock-derived fields
+carry `CalibrationStatus::Uncalibrated` until a Southeast Asian cohort recalibration
+is completed.
+
+```rust
+use clinical_tasks::longevity::{
+    LongevitySignals, BiologicalAgeDelta, CalibrationStatus,
+    SaspComposite, FunctionalTrajectory,
+};
+
+// Construct from post-ICU follow-up measurements
+let signals = LongevitySignals {
+    biological_age_delta: Some(BiologicalAgeDelta {
+        value: 8.3,                              // GrimAge - chronological age (years)
+        clock_version: ClockVersion::GrimAge2,
+        calibration_status: CalibrationStatus::Uncalibrated,  // SEA population, no local calibration
+    }),
+    il6_pgml:  Some(14.2),
+    il8_pgml:  Some(22.7),
+    gdf15_pgml: Some(1840.0),
+    mmp3_ngml: Some(6.1),
+    p16_relative_expression: Some(2.4),
+    sasp_composite_score: None,   // computed downstream
+    post_icu_functional_trajectory: Some(FunctionalTrajectory::Pics),
+};
 ```
 
 ## End-to-End Example
@@ -224,6 +258,7 @@ clinical-rs/
 │   │   └── Cargo.toml
 │   └── clinical-tasks/       # Task windowing engine
 │       ├── src/
+│       │   └── longevity/    # Post-critical-illness longevity signals (feature-gated)
 │       └── Cargo.toml
 ├── ARCHITECTURE.md
 ├── TODO.md
