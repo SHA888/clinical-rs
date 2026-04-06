@@ -16,6 +16,8 @@ pub mod ccsr;
 pub mod icd10;
 pub mod icd9;
 pub mod ndc;
+pub mod ndc_to_atc;
+pub mod ndc_to_rxnorm;
 pub mod types;
 
 pub use atc::{Atc, AtcLevel};
@@ -24,4 +26,6 @@ pub use ccsr::{CcsrCategory, CcsrContext, CcsrMapping, CcsrToIcd10Cm, Icd10CmToC
 pub use icd9::Icd9Cm;
 pub use icd10::Icd10Cm;
 pub use ndc::Ndc;
+pub use ndc_to_atc::NdcToAtc;
+pub use ndc_to_rxnorm::NdcToRxNorm;
 pub use types::{Code, CodeSystem, CrossMap, MedCodeError, System};

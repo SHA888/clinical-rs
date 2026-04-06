@@ -386,11 +386,11 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
 - [x] **NDC** (FDA National Drug Code Directory)
   - [x] Labeler-product-package structure
   - [x] Feature flag: `ndc`
-- [ ] **Cross-mappings**
-  - [ ] ICD-10-CM → CCS (single-level)
+- [x] **Cross-mappings**
+  - [x] ICD-10-CM → CCS (single-level)
   - [x] ICD-9-CM → CCS
-  - [ ] NDC → ATC
-  - [ ] NDC → RxNorm
+  - [x] NDC → ATC
+  - [x] NDC → RxNorm
 - [ ] **Serde support**
   - [ ] `Serialize`/`Deserialize` for `Code`, `System`
   - [ ] Feature flag: `serde`

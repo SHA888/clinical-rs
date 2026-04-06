@@ -56,7 +56,10 @@ impl Icd10CmToCcs {
     ///
     /// Returns an error if the ICD-10-CM code cannot be mapped to a CCS category.
     pub fn get_category(&self, code: &str) -> Result<CcsCategory, MedCodeError> {
-        if let Some(&ccs_code) = self.mappings.get(code) {
+        // Normalize ICD-10-CM code: uppercase, preserve dots
+        let normalized_code = code.to_uppercase();
+
+        if let Some(&ccs_code) = self.mappings.get(&normalized_code) {
             if let Some(&description) = self.descriptions.get(ccs_code) {
                 Ok(CcsCategory::new(ccs_code, description))
             } else {
@@ -130,7 +133,10 @@ impl Icd9CmToCcs {
     ///
     /// Returns an error if the ICD-9-CM code cannot be mapped to a CCS category.
     pub fn get_category(&self, code: &str) -> Result<CcsCategory, MedCodeError> {
-        if let Some(&ccs_code) = self.mappings.get(code) {
+        // Normalize ICD-9-CM code: uppercase, preserve dots
+        let normalized_code = code.to_uppercase();
+
+        if let Some(&ccs_code) = self.mappings.get(&normalized_code) {
             if let Some(&description) = self.descriptions.get(ccs_code) {
                 Ok(CcsCategory::new(ccs_code, description))
             } else {
@@ -178,6 +184,12 @@ include!(concat!(env!("OUT_DIR"), "/ccs_data.rs"));
 
 #[cfg(test)]
 mod integration_tests;
+
+#[cfg(test)]
+mod icd10cm_integration_tests;
+
+#[cfg(test)]
+mod normalization_tests;
 
 #[cfg(test)]
 mod tests {
