@@ -1,5 +1,8 @@
 # Rust files
 *.rs diff=rust
 
+# PDF files are binary
+*.pdf binary
+
 # Enforce LF line endings
 * text=lf eol=lf
