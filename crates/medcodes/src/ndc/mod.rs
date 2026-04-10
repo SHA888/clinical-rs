@@ -318,6 +318,8 @@ include!(concat!(env!("OUT_DIR"), "/ndc_data.rs"));
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
+
     use super::*;
 
     #[test]
@@ -362,7 +364,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::expect_used)]
     fn test_parse_components() {
         let ndc = Ndc::new();
 

@@ -1,9 +1,10 @@
 //! Tests for ATC (Anatomical Therapeutic Chemical) code system
 
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 use medcodes::{CodeSystem, atc::Atc};
 
 #[test]
-#[allow(clippy::expect_used)]
 fn test_atc_lookup() {
     let atc = Atc::new();
 
@@ -23,7 +24,6 @@ fn test_atc_lookup() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_hierarchy() {
     let atc = Atc::new();
 
@@ -54,7 +54,6 @@ fn test_atc_hierarchy() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used)]
 fn test_atc_ddd() {
     let atc = Atc::new();
 
@@ -164,7 +163,6 @@ fn test_atc_level_properties() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_hierarchy_traversal_comprehensive() {
     let atc = Atc::new();
 
@@ -191,7 +189,6 @@ fn test_atc_hierarchy_traversal_comprehensive() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_diabetes_hierarchy() {
     let atc = Atc::new();
 
@@ -209,7 +206,6 @@ fn test_atc_diabetes_hierarchy() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_antithrombotic_agents() {
     let atc = Atc::new();
 

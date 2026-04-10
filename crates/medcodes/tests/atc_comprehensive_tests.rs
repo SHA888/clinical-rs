@@ -1,12 +1,13 @@
 //! Additional comprehensive tests for ATC edge cases and robustness
 
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 use medcodes::{
     CodeSystem,
     atc::{Atc, AtcLevel},
 };
 
 #[test]
-#[allow(clippy::unwrap_used)]
 fn test_atc_all_hierarchy_levels() {
     let atc = Atc::new();
 
@@ -19,7 +20,6 @@ fn test_atc_all_hierarchy_levels() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used)]
 fn test_atc_comprehensive_hierarchy_traversal() {
     let atc = Atc::new();
 
@@ -43,7 +43,6 @@ fn test_atc_comprehensive_hierarchy_traversal() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used)]
 fn test_atc_descendants_completeness() {
     let atc = Atc::new();
 
@@ -68,7 +67,6 @@ fn test_atc_descendants_completeness() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_ddd_various_formats() {
     let atc = Atc::new();
 
@@ -94,7 +92,6 @@ fn test_atc_ddd_various_formats() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used)]
 fn test_atc_case_insensitive_lookup() {
     let atc = Atc::new();
 
@@ -103,10 +100,7 @@ fn test_atc_case_insensitive_lookup() {
 
     for variation in variations {
         let result = atc.lookup(variation);
-        assert!(
-            result.is_ok(),
-            "Should handle case variation: {variation}"
-        );
+        assert!(result.is_ok(), "Should handle case variation: {variation}");
 
         let code = result.unwrap();
         assert_eq!(code.code(), "C10AA01"); // Should be normalized
@@ -114,7 +108,6 @@ fn test_atc_case_insensitive_lookup() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used)]
 fn test_atc_whitespace_handling() {
     let atc = Atc::new();
 
@@ -140,7 +133,6 @@ fn test_atc_whitespace_handling() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used)]
 fn test_atc_invalid_format_handling() {
     let atc = Atc::new();
 
@@ -170,7 +162,6 @@ fn test_atc_invalid_format_handling() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used)]
 fn test_atc_hierarchy_edge_cases() {
     let atc = Atc::new();
 
@@ -184,7 +175,6 @@ fn test_atc_hierarchy_edge_cases() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used)]
 fn test_atc_level_edge_cases() {
     let atc = Atc::new();
 
@@ -203,7 +193,6 @@ fn test_atc_level_edge_cases() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used)]
 fn test_atc_normalization_edge_cases() {
     let atc = Atc::new();
 
@@ -225,7 +214,6 @@ fn test_atc_normalization_edge_cases() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_cross_system_consistency() {
     let atc = Atc::new();
 
@@ -246,7 +234,6 @@ fn test_atc_cross_system_consistency() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_performance_large_hierarchy() {
     let atc = Atc::new();
 
@@ -274,7 +261,6 @@ fn test_atc_performance_large_hierarchy() {
 }
 
 #[test]
-#[allow(clippy::expect_used)]
 fn test_atc_error_handling() {
     let atc = Atc::new();
 
@@ -289,7 +275,6 @@ fn test_atc_error_handling() {
 }
 
 #[test]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_ddd_method_consistency() {
     let atc = Atc::new();
 

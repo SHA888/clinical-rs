@@ -104,9 +104,30 @@ cargo nextest run
 Run all quality checks:
 ```bash
 cargo fmt --check
-cargo clippy -- -D warnings
+cargo clippy --workspace --all-targets -- -D warnings
 cargo deny check
 cargo audit
+```
+
+#### Clippy and Test Code
+
+We treat all Clippy warnings as errors in production code (`-D warnings`). However, test code has different requirements:
+
+- **Production code**: Must pass all Clippy lints without suppressions
+- **Test code**: Uses `#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` at the module level
+
+This follows the Rust industry standard. Tests need to fail fast on unexpected errors, so `unwrap()`, `expect()`, and `panic!()` are idiomatic in test code. Each test file or test module contains this attribute at the top:
+
+```rust
+// For files in tests/ directory
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+// For embedded tests in src/ files
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+    // ...
+}
 ```
 
 ### Release Process

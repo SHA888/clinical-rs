@@ -1,9 +1,10 @@
 #[cfg(test)]
 mod ccs_integration_tests {
+    #![allow(clippy::panic)]
+
     use crate::{CrossMap, Icd9CmToCcs, System};
 
     #[test]
-    #[allow(clippy::panic)]
     fn test_icd9cm_to_ccs_mapping() {
         let mapper = Icd9CmToCcs::new();
 
@@ -20,10 +21,7 @@ mod ccs_integration_tests {
             match mapper.map(icd9_code, System::Ccs) {
                 Ok(mapped_codes) => {
                     if let Some(expected) = expected_ccs {
-                        assert!(
-                            !mapped_codes.is_empty(),
-                            "Expected mapping for {icd9_code}"
-                        );
+                        assert!(!mapped_codes.is_empty(), "Expected mapping for {icd9_code}");
                         assert_eq!(
                             mapped_codes[0].code, expected,
                             "Expected {icd9_code} to map to {expected}"
@@ -40,9 +38,7 @@ mod ccs_integration_tests {
                     if expected_ccs.is_none() {
                         println!("✓ ICD-9-CM {icd9_code} correctly failed to map");
                     } else if let Some(expected) = expected_ccs {
-                        panic!(
-                            "Failed to map {icd9_code} but expected mapping to {expected}"
-                        );
+                        panic!("Failed to map {icd9_code} but expected mapping to {expected}");
                     }
                 }
             }

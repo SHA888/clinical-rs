@@ -1,9 +1,10 @@
 #[cfg(test)]
 mod ccs_normalization_tests {
+    #![allow(clippy::panic)]
+
     use crate::{CrossMap, Icd9CmToCcs, Icd10CmToCcs, System};
 
     #[test]
-    #[allow(clippy::panic)]
     fn test_icd10cm_code_normalization() {
         let mapper = Icd10CmToCcs::new();
 
@@ -38,9 +39,7 @@ mod ccs_normalization_tests {
                     if expected_ccs.is_none() {
                         println!("✓ ICD-10-CM {input_code} correctly failed to map");
                     } else if let Some(expected) = expected_ccs {
-                        panic!(
-                            "Failed to map {input_code} but expected mapping to {expected}"
-                        );
+                        panic!("Failed to map {input_code} but expected mapping to {expected}");
                     }
                 }
             }
@@ -48,7 +47,6 @@ mod ccs_normalization_tests {
     }
 
     #[test]
-    #[allow(clippy::panic)]
     fn test_icd9cm_code_normalization() {
         let mapper = Icd9CmToCcs::new();
 
@@ -83,9 +81,7 @@ mod ccs_normalization_tests {
                     if expected_ccs.is_none() {
                         println!("✓ ICD-9-CM {input_code} correctly failed to map");
                     } else if let Some(expected) = expected_ccs {
-                        panic!(
-                            "Failed to map {input_code} but expected mapping to {expected}"
-                        );
+                        panic!("Failed to map {input_code} but expected mapping to {expected}");
                     }
                 }
             }

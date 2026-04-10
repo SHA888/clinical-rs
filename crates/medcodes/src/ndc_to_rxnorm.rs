@@ -65,6 +65,8 @@ include!(concat!(env!("OUT_DIR"), "/ndc_to_rxnorm_data.rs"));
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::panic)]
+
     use super::*;
 
     #[test]
@@ -75,7 +77,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::panic)]
     fn test_ndc_to_rxnorm_mapping() {
         let mapper = NdcToRxNorm::new();
 

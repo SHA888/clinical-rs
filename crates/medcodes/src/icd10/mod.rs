@@ -290,10 +290,11 @@ include!(concat!(env!("OUT_DIR"), "/icd10cm_data.rs"));
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
+
     use super::*;
 
     #[test]
-    #[allow(clippy::unwrap_used)]
     fn test_normalize() {
         let icd10 = Icd10Cm::new();
         assert_eq!(icd10.normalize_code("I10.9"), "I109");
@@ -304,7 +305,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
     fn test_is_valid() {
         let icd10 = Icd10Cm::new();
         // These will be false until we populate the data
@@ -314,7 +314,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
     fn test_parent_error_handling() {
         let icd10 = Icd10Cm::new();
         // Test unknown code returns error
@@ -327,7 +326,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
     fn test_children_error_handling() {
         let icd10 = Icd10Cm::new();
         // Test unknown code returns error
@@ -340,7 +338,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
     fn test_ancestors_error_handling() {
         let icd10 = Icd10Cm::new();
         // Test unknown code returns error
@@ -353,7 +350,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
     fn test_descendants_error_handling() {
         let icd10 = Icd10Cm::new();
         // Test unknown code returns error
@@ -366,7 +362,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
     fn test_lookup_error_handling() {
         let icd10 = Icd10Cm::new();
         // Test unknown code returns error

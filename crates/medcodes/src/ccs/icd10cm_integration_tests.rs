@@ -1,9 +1,10 @@
 #[cfg(test)]
 mod icd10cm_ccs_integration_tests {
+    #![allow(clippy::panic)]
+
     use crate::{CrossMap, Icd10CmToCcs, System};
 
     #[test]
-    #[allow(clippy::panic)]
     fn test_icd10cm_to_ccs_mapping() {
         let mapper = Icd10CmToCcs::new();
 
@@ -40,9 +41,7 @@ mod icd10cm_ccs_integration_tests {
                     if expected_ccs.is_none() {
                         println!("✓ ICD-10-CM {icd10_code} correctly failed to map");
                     } else if let Some(expected) = expected_ccs {
-                        panic!(
-                            "Failed to map {icd10_code} but expected mapping to {expected}"
-                        );
+                        panic!("Failed to map {icd10_code} but expected mapping to {expected}");
                     }
                 }
             }

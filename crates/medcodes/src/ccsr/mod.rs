@@ -322,6 +322,8 @@ include!(concat!(env!("OUT_DIR"), "/ccsr_data.rs"));
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
+
     use super::*;
 
     #[test]
@@ -355,7 +357,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
     fn test_normalize_code() {
         let mapper = Icd10CmToCcsr::new();
 
@@ -383,7 +384,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
     fn test_ccsr_to_icd10_get_codes() {
         let mapper = CcsrToIcd10Cm::new();
 
