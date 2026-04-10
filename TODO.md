@@ -391,12 +391,12 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
   - [x] ICD-9-CM → CCS
   - [x] NDC → ATC
   - [x] NDC → RxNorm
-- [ ] **Serde support**
-  - [ ] `Serialize`/`Deserialize` for `Code`, `System`
-  - [ ] Feature flag: `serde`
-- [ ] **Benchmark suite**
-  - [ ] `criterion` benchmarks for lookup, traversal, and cross-mapping
-  - [ ] Baseline numbers documented in README
+- [x] **Serde support**
+  - [x] `Serialize`/`Deserialize` for `Code`, `System`
+  - [x] Feature flag: `serde`
+- [x] **Benchmark suite**
+  - [x] `criterion` benchmarks for lookup, traversal, and cross-mapping
+  - [x] Baseline numbers documented in README
 
 ### v0.3.0 — Clinical Terminologies
 

@@ -4,6 +4,7 @@ use std::fmt::{self, Display, Formatter};
 
 /// Supported medical code systems.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum System {
     /// International Classification of Diseases, 9th Revision, Clinical Modification
     Icd9Cm,
@@ -49,6 +50,7 @@ impl Display for System {
 
 /// A medical code with its system and description.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Code {
     /// The code system this code belongs to
     pub system: System,
@@ -180,6 +182,7 @@ pub trait CrossMap {
 
 /// Errors that can occur when working with medical codes.
 #[derive(Debug, thiserror::Error)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MedCodeError {
     /// Code not found in the specified system.
     #[error("Code not found: `{code}` in `{system}`")]

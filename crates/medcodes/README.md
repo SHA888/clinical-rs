@@ -83,6 +83,52 @@ let mapper = Icd10CmToCcsr::new();
 let mapped_codes = mapper.map("A00.0", System::Ccsr).unwrap();
 ```
 
+## Benchmarks
+
+The crate includes comprehensive benchmarks for lookup, traversal, and cross-mapping operations using Criterion.
+
+### Running Benchmarks
+
+Benchmarks require a C compiler to be installed (e.g., `build-essential` on Debian/Ubuntu or `Xcode Command Line Tools` on macOS).
+
+```bash
+cargo bench --package medcodes
+```
+
+### Benchmark Coverage
+
+- **Lookup operations**: Code lookup success/failure, validation
+- **Traversal operations**: Parent, children, ancestors, descendants
+- **Cross-mapping operations**: ICD-10-CM to CCS, ICD-10-CM to CCSR
+
+### Baseline Performance
+
+Baseline numbers (measured on Linux `x86_64`, Rust 1.94.0):
+
+**ICD-10-CM Lookup**
+- Success: ~697 µs
+- Not found: ~258 µs
+- Validation: ~702 µs
+
+**ICD-10-CM Traversal**
+- Parent: ~162 ns
+- Children: ~105 ns
+- Ancestors: ~154 ns
+- Descendants: ~103 ns
+
+**ATC Lookup**
+- Success: ~166 ns
+- Validation: ~148 ns
+
+**ATC Traversal**
+- Parent: ~221 ns
+- Children: ~882 ns
+
+**Cross-Mapping (ICD-10-CM → CCS)**
+- Map: ~157 ns
+
+Run `cargo bench --package medcodes` to generate current baseline numbers for your environment.
+
 ## Data Sources
 
 - **ICD-10-CM**: CMS FY2025 release (October 1, 2024)
