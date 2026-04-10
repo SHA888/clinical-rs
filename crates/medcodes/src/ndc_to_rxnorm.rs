@@ -75,6 +75,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::panic)]
     fn test_ndc_to_rxnorm_mapping() {
         let mapper = NdcToRxNorm::new();
 
@@ -89,7 +90,7 @@ mod tests {
                 );
             }
             Err(e) => {
-                panic!("Failed to map NDC to RxNorm: {}", e);
+                panic!("Failed to map NDC to RxNorm: {e}");
             }
         }
 

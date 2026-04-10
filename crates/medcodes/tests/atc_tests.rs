@@ -3,25 +3,27 @@
 use medcodes::{CodeSystem, atc::Atc};
 
 #[test]
+#[allow(clippy::expect_used)]
 fn test_atc_lookup() {
     let atc = Atc::new();
 
     // Test lookup of a chemical substance (level 5)
     let result = atc.lookup("C10AA01");
     assert!(result.is_ok());
-    let code = result.unwrap();
+    let code = result.expect("lookup should succeed");
     assert_eq!(code.code(), "C10AA01");
     assert!(code.description().contains("simvastatin"));
 
     // Test lookup of anatomical group (level 1)
     let result = atc.lookup("C");
     assert!(result.is_ok());
-    let code = result.unwrap();
+    let code = result.expect("lookup should succeed");
     assert_eq!(code.code(), "C");
     assert_eq!(code.description(), "CARDIOVASCULAR SYSTEM");
 }
 
 #[test]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_hierarchy() {
     let atc = Atc::new();
 
@@ -52,6 +54,7 @@ fn test_atc_hierarchy() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_atc_ddd() {
     let atc = Atc::new();
 
@@ -161,6 +164,7 @@ fn test_atc_level_properties() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_hierarchy_traversal_comprehensive() {
     let atc = Atc::new();
 
@@ -187,6 +191,7 @@ fn test_atc_hierarchy_traversal_comprehensive() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_diabetes_hierarchy() {
     let atc = Atc::new();
 
@@ -204,6 +209,7 @@ fn test_atc_diabetes_hierarchy() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_antithrombotic_agents() {
     let atc = Atc::new();
 

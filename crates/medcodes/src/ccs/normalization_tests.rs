@@ -3,6 +3,7 @@ mod ccs_normalization_tests {
     use crate::{CrossMap, Icd9CmToCcs, Icd10CmToCcs, System};
 
     #[test]
+    #[allow(clippy::panic)]
     fn test_icd10cm_code_normalization() {
         let mapper = Icd10CmToCcs::new();
 
@@ -19,29 +20,26 @@ mod ccs_normalization_tests {
                     if let Some(expected) = expected_ccs {
                         assert!(
                             !mapped_codes.is_empty(),
-                            "Expected mapping for {}",
-                            input_code
+                            "Expected mapping for {input_code}"
                         );
                         assert_eq!(
                             mapped_codes[0].code, expected,
-                            "Expected {} to map to {}",
-                            input_code, expected
+                            "Expected {input_code} to map to {expected}"
                         );
                         println!(
-                            "✓ ICD-10-CM {} (normalized) maps to CCS {}",
-                            input_code, mapped_codes[0].code
+                            "✓ ICD-10-CM {input_code} (normalized) maps to CCS {}",
+                            mapped_codes[0].code
                         );
                     } else {
-                        panic!("Unexpected mapping for {}: {:?}", input_code, mapped_codes);
+                        panic!("Unexpected mapping for {input_code}: {mapped_codes:?}");
                     }
                 }
                 Err(_e) => {
                     if expected_ccs.is_none() {
-                        println!("✓ ICD-10-CM {} correctly failed to map", input_code);
+                        println!("✓ ICD-10-CM {input_code} correctly failed to map");
                     } else if let Some(expected) = expected_ccs {
                         panic!(
-                            "Failed to map {} but expected mapping to {}",
-                            input_code, expected
+                            "Failed to map {input_code} but expected mapping to {expected}"
                         );
                     }
                 }
@@ -50,6 +48,7 @@ mod ccs_normalization_tests {
     }
 
     #[test]
+    #[allow(clippy::panic)]
     fn test_icd9cm_code_normalization() {
         let mapper = Icd9CmToCcs::new();
 
@@ -66,29 +65,26 @@ mod ccs_normalization_tests {
                     if let Some(expected) = expected_ccs {
                         assert!(
                             !mapped_codes.is_empty(),
-                            "Expected mapping for {}",
-                            input_code
+                            "Expected mapping for {input_code}"
                         );
                         assert_eq!(
                             mapped_codes[0].code, expected,
-                            "Expected {} to map to {}",
-                            input_code, expected
+                            "Expected {input_code} to map to {expected}"
                         );
                         println!(
-                            "✓ ICD-9-CM {} (normalized) maps to CCS {}",
-                            input_code, mapped_codes[0].code
+                            "✓ ICD-9-CM {input_code} (normalized) maps to CCS {}",
+                            mapped_codes[0].code
                         );
                     } else {
-                        panic!("Unexpected mapping for {}: {:?}", input_code, mapped_codes);
+                        panic!("Unexpected mapping for {input_code}: {mapped_codes:?}");
                     }
                 }
                 Err(_e) => {
                     if expected_ccs.is_none() {
-                        println!("✓ ICD-9-CM {} correctly failed to map", input_code);
+                        println!("✓ ICD-9-CM {input_code} correctly failed to map");
                     } else if let Some(expected) = expected_ccs {
                         panic!(
-                            "Failed to map {} but expected mapping to {}",
-                            input_code, expected
+                            "Failed to map {input_code} but expected mapping to {expected}"
                         );
                     }
                 }

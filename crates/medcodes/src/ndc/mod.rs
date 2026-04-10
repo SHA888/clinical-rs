@@ -215,7 +215,7 @@ impl CodeSystem for Ndc {
 
         if let Some((labeler, product, _package)) = self.parse_components(&normalized) {
             // Return product code as ancestor (if it exists as a standalone entry)
-            let product_code = format!("{}-{}", labeler, product);
+            let product_code = format!("{labeler}-{product}");
             if let Some(&description) = self.descriptions.get(product_code.as_str()) {
                 ancestors.push(Code::new(System::Ndc, product_code, description));
             }
@@ -249,7 +249,7 @@ impl CodeSystem for Ndc {
                 let current_code = if package.is_empty() {
                     labeler.clone() // Product-level code (no package)
                 } else {
-                    format!("{}-{}", labeler, product) // Product code
+                    format!("{labeler}-{product}") // Product code
                 };
 
                 if current_code == normalized {
@@ -271,7 +271,7 @@ impl CodeSystem for Ndc {
         if let Some((labeler, product, _package)) = self.parse_components(&normalized) {
             // If it's a full NDC, parent is the product
             if !product.is_empty() {
-                let product_code = format!("{}-{}", labeler, product);
+                let product_code = format!("{labeler}-{product}");
                 if let Some(&description) = self.descriptions.get(product_code.as_str()) {
                     return Ok(Some(Code::new(System::Ndc, product_code, description)));
                 }
@@ -300,7 +300,7 @@ impl CodeSystem for Ndc {
                 let parent_code = if package.is_empty() {
                     labeler.clone() // Product-level code (no package)
                 } else {
-                    format!("{}-{}", labeler, product) // Product code
+                    format!("{labeler}-{product}") // Product code
                 };
 
                 if parent_code == normalized {
@@ -362,12 +362,13 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::expect_used)]
     fn test_parse_components() {
         let ndc = Ndc::new();
 
         let components = ndc.parse_components("1234-5678-90");
         assert!(components.is_some());
-        let (labeler, product, package) = components.unwrap();
+        let (labeler, product, package) = components.expect("components should be Some");
         assert_eq!(labeler, "1234");
         assert_eq!(product, "5678");
         assert_eq!(package, "90");

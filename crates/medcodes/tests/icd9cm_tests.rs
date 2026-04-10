@@ -3,6 +3,7 @@
 use medcodes::{CodeSystem, icd9::Icd9Cm};
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_icd9cm_lookup() {
     let icd9 = Icd9Cm::new();
 
@@ -22,6 +23,7 @@ fn test_icd9cm_lookup() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_icd9cm_hierarchy() {
     let icd9 = Icd9Cm::new();
 
@@ -83,6 +85,7 @@ fn test_icd9cm_normalization() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_icd9cm_error_handling() {
     let icd9 = Icd9Cm::new();
 
@@ -107,6 +110,7 @@ fn test_icd9cm_error_handling() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_icd9comprehensive_traversal() {
     let icd9 = Icd9Cm::new();
 

@@ -3,6 +3,7 @@
 use medcodes::{CodeSystem, ndc::Ndc};
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_ndc_lookup() {
     let ndc = Ndc::new();
 
@@ -33,6 +34,7 @@ fn test_ndc_validation() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_ndc_normalization() {
     let ndc = Ndc::new();
 
@@ -45,6 +47,7 @@ fn test_ndc_normalization() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_ndc_parse_components() {
     let ndc = Ndc::new();
 
@@ -71,6 +74,7 @@ fn test_ndc_parse_components() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_ndc_component_accessors() {
     let ndc = Ndc::new();
 
@@ -110,6 +114,7 @@ fn test_ndc_format_validation() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_ndc_ancestors() {
     let ndc = Ndc::new();
 
@@ -122,7 +127,8 @@ fn test_ndc_ancestors() {
 }
 
 #[test]
-fn test_ndc_parent() {
+#[allow(clippy::unwrap_used)]
+fn test_ndc_hierarchy() {
     let ndc = Ndc::new();
 
     // Test parent of full NDC code
@@ -144,6 +150,7 @@ fn test_ndc_children() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_ndc_descendants() {
     let ndc = Ndc::new();
 
@@ -167,6 +174,7 @@ fn test_ndc_error_handling() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_ndc_various_drugs() {
     let ndc = Ndc::new();
 
@@ -189,6 +197,7 @@ fn test_ndc_various_drugs() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_ndc_labeler_products() {
     let ndc = Ndc::new();
 
@@ -205,6 +214,7 @@ fn test_ndc_labeler_products() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_ndc_drug_families() {
     let ndc = Ndc::new();
 
@@ -243,6 +253,7 @@ fn test_ndc_drug_families() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_ndc_statin_family() {
     let ndc = Ndc::new();
 

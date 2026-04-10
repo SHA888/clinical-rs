@@ -75,6 +75,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::panic)]
     fn test_ndc_to_atc_mapping() {
         let mapper = NdcToAtc::new();
 
@@ -86,7 +87,7 @@ mod tests {
                 println!("✓ NDC 12345-6789-01 maps to ATC {}", mapped_codes[0].code);
             }
             Err(e) => {
-                panic!("Failed to map NDC to ATC: {}", e);
+                panic!("Failed to map NDC to ATC: {e}");
             }
         }
 

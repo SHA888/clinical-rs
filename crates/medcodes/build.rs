@@ -1241,8 +1241,8 @@ fn generate_ccs_maps(icd10cm_mappings: &[CcsMapping], icd9cm_mappings: &[CcsMapp
     ccs_codes.sort();
 
     for ccs_code in ccs_codes {
-        let description = format!("CCS Category {}", ccs_code);
-        let _ = writeln!(output, "    \"{}\" => \"{}\",", ccs_code, description);
+        let description = format!("CCS Category {ccs_code}");
+        let _ = writeln!(output, "    \"{ccs_code}\" => \"{description}\",");
     }
     output.push_str("};\n\n");
 

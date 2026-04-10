@@ -3,6 +3,7 @@ mod icd10cm_ccs_integration_tests {
     use crate::{CrossMap, Icd10CmToCcs, System};
 
     #[test]
+    #[allow(clippy::panic)]
     fn test_icd10cm_to_ccs_mapping() {
         let mapper = Icd10CmToCcs::new();
 
@@ -21,29 +22,26 @@ mod icd10cm_ccs_integration_tests {
                     if let Some(expected) = expected_ccs {
                         assert!(
                             !mapped_codes.is_empty(),
-                            "Expected mapping for {}",
-                            icd10_code
+                            "Expected mapping for {icd10_code}"
                         );
                         assert_eq!(
                             mapped_codes[0].code, expected,
-                            "Expected {} to map to {}",
-                            icd10_code, expected
+                            "Expected {icd10_code} to map to {expected}"
                         );
                         println!(
-                            "✓ ICD-10-CM {} maps to CCS {}",
-                            icd10_code, mapped_codes[0].code
+                            "✓ ICD-10-CM {icd10_code} maps to CCS {}",
+                            mapped_codes[0].code
                         );
                     } else {
-                        panic!("Unexpected mapping for {}: {:?}", icd10_code, mapped_codes);
+                        panic!("Unexpected mapping for {icd10_code}: {mapped_codes:?}");
                     }
                 }
                 Err(_) => {
                     if expected_ccs.is_none() {
-                        println!("✓ ICD-10-CM {} correctly failed to map", icd10_code);
+                        println!("✓ ICD-10-CM {icd10_code} correctly failed to map");
                     } else if let Some(expected) = expected_ccs {
                         panic!(
-                            "Failed to map {} but expected mapping to {}",
-                            icd10_code, expected
+                            "Failed to map {icd10_code} but expected mapping to {expected}"
                         );
                     }
                 }

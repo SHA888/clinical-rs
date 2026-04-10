@@ -6,6 +6,7 @@ use medcodes::{
 };
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_atc_all_hierarchy_levels() {
     let atc = Atc::new();
 
@@ -18,6 +19,7 @@ fn test_atc_all_hierarchy_levels() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_atc_comprehensive_hierarchy_traversal() {
     let atc = Atc::new();
 
@@ -41,6 +43,7 @@ fn test_atc_comprehensive_hierarchy_traversal() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_atc_descendants_completeness() {
     let atc = Atc::new();
 
@@ -65,6 +68,7 @@ fn test_atc_descendants_completeness() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_ddd_various_formats() {
     let atc = Atc::new();
 
@@ -90,6 +94,7 @@ fn test_atc_ddd_various_formats() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_atc_case_insensitive_lookup() {
     let atc = Atc::new();
 
@@ -100,8 +105,7 @@ fn test_atc_case_insensitive_lookup() {
         let result = atc.lookup(variation);
         assert!(
             result.is_ok(),
-            "Should handle case variation: {}",
-            variation
+            "Should handle case variation: {variation}"
         );
 
         let code = result.unwrap();
@@ -110,6 +114,7 @@ fn test_atc_case_insensitive_lookup() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_atc_whitespace_handling() {
     let atc = Atc::new();
 
@@ -126,8 +131,7 @@ fn test_atc_whitespace_handling() {
         let result = atc.lookup(variation);
         assert!(
             result.is_ok(),
-            "Should handle whitespace variation: {:?}",
-            variation
+            "Should handle whitespace variation: {variation:?}"
         );
 
         let code = result.unwrap();
@@ -136,6 +140,7 @@ fn test_atc_whitespace_handling() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_atc_invalid_format_handling() {
     let atc = Atc::new();
 
@@ -155,20 +160,17 @@ fn test_atc_invalid_format_handling() {
         let result = atc.lookup(invalid_code);
         assert!(
             result.is_err(),
-            "Should reject invalid format: {}",
-            invalid_code
+            "Should reject invalid format: {invalid_code}"
         );
-
-        // Should also be invalid for is_valid
         assert!(
             !atc.is_valid(invalid_code),
-            "Should be invalid: {}",
-            invalid_code
+            "Should be invalid: {invalid_code}"
         );
     }
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_atc_hierarchy_edge_cases() {
     let atc = Atc::new();
 
@@ -182,6 +184,7 @@ fn test_atc_hierarchy_edge_cases() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_atc_level_edge_cases() {
     let atc = Atc::new();
 
@@ -200,6 +203,7 @@ fn test_atc_level_edge_cases() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_atc_normalization_edge_cases() {
     let atc = Atc::new();
 
@@ -211,8 +215,7 @@ fn test_atc_normalization_edge_cases() {
         assert_eq!(
             normalized,
             code.to_uppercase(),
-            "Valid code should normalize to uppercase: {}",
-            code
+            "Valid code should normalize to uppercase: {code}"
         );
     }
 
@@ -222,6 +225,7 @@ fn test_atc_normalization_edge_cases() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_cross_system_consistency() {
     let atc = Atc::new();
 
@@ -242,6 +246,7 @@ fn test_atc_cross_system_consistency() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_performance_large_hierarchy() {
     let atc = Atc::new();
 
@@ -269,7 +274,8 @@ fn test_atc_performance_large_hierarchy() {
 }
 
 #[test]
-fn test_atc_error_messages() {
+#[allow(clippy::expect_used)]
+fn test_atc_error_handling() {
     let atc = Atc::new();
 
     // Test that error messages are informative
@@ -283,6 +289,7 @@ fn test_atc_error_messages() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 fn test_atc_ddd_method_consistency() {
     let atc = Atc::new();
 

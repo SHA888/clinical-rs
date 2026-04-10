@@ -3,6 +3,7 @@ mod ccs_integration_tests {
     use crate::{CrossMap, Icd9CmToCcs, System};
 
     #[test]
+    #[allow(clippy::panic)]
     fn test_icd9cm_to_ccs_mapping() {
         let mapper = Icd9CmToCcs::new();
 
@@ -21,29 +22,26 @@ mod ccs_integration_tests {
                     if let Some(expected) = expected_ccs {
                         assert!(
                             !mapped_codes.is_empty(),
-                            "Expected mapping for {}",
-                            icd9_code
+                            "Expected mapping for {icd9_code}"
                         );
                         assert_eq!(
                             mapped_codes[0].code, expected,
-                            "Expected {} to map to {}",
-                            icd9_code, expected
+                            "Expected {icd9_code} to map to {expected}"
                         );
                         println!(
-                            "✓ ICD-9-CM {} maps to CCS {}",
-                            icd9_code, mapped_codes[0].code
+                            "✓ ICD-9-CM {icd9_code} maps to CCS {}",
+                            mapped_codes[0].code
                         );
                     } else {
-                        panic!("Unexpected mapping for {}: {:?}", icd9_code, mapped_codes);
+                        panic!("Unexpected mapping for {icd9_code}: {mapped_codes:?}");
                     }
                 }
                 Err(_) => {
                     if expected_ccs.is_none() {
-                        println!("✓ ICD-9-CM {} correctly failed to map", icd9_code);
+                        println!("✓ ICD-9-CM {icd9_code} correctly failed to map");
                     } else if let Some(expected) = expected_ccs {
                         panic!(
-                            "Failed to map {} but expected mapping to {}",
-                            icd9_code, expected
+                            "Failed to map {icd9_code} but expected mapping to {expected}"
                         );
                     }
                 }
