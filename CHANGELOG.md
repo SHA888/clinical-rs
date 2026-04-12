@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.2.0 - rc1 (medcodes)] - 2026-04-12
+
+### Added
+- **medcodes** v0.2.0 released with new code systems:
+  - **ICD-9-CM** (frozen Oct 2015 release) with full `CodeSystem` trait
+  - **ATC** (Anatomical Therapeutic Chemical) with 5-level hierarchy and DDD metadata
+  - **NDC** (National Drug Code) with labeler-product-package parsing
+- **Cross-mapping support**: ICD-10/9-CM → CCS, NDC → ATC/RxNorm
+- **Serde support** for `Code` and `System` types (`serde` feature flag)
+- **Benchmark suite** with `criterion` for performance baselines
+
+### Changed
+- Improved CI workflow with Windows support
+- Added cargo-deny security and license compliance checks
+- Refactored clippy suppressions to use module-level attributes in test code
+
 ## [0.1.0] - 2026-04-01
 
 ### Added
@@ -52,5 +70,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automated testing, formatting, and linting
 - Security vulnerability scanning
 - License compliance checking
-
-## [Unreleased]

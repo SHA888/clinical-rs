@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.2.0] - 2026-04-12
+
+### Added
+- **ICD-9-CM** code system support (frozen Oct 2015 release)
+  - Full `CodeSystem` trait implementation
+  - Code lookup, hierarchy traversal, and validation
+  - Feature flag: `icd9cm`
+- **ATC** (Anatomical Therapeutic Chemical) code system
+  - 5-level hierarchy (anatomical → chemical substance)
+  - DDD (Defined Daily Dose) as optional metadata
+  - Feature flag: `atc`
+- **NDC** (National Drug Code) support
+  - Labeler-product-package structure parsing
+  - Component accessors for labeler, product, package codes
+  - Feature flag: `ndc`
+- **Cross-mapping support**
+  - ICD-10-CM → CCS (single-level)
+  - ICD-9-CM → CCS
+  - NDC → ATC
+  - NDC → RxNorm
+- **Serde support** for `Code` and `System` types
+  - `Serialize`/`Deserialize` implementations
+  - Feature flag: `serde`
+- **Benchmark suite**
+  - `criterion` benchmarks for lookup, traversal, and cross-mapping
+  - Baseline performance numbers documented in README
+
+### Changed
+- Refactored clippy suppressions to use module-level attributes in test code
+
+## [0.1.1] - 2026-03-30
+
 ## [0.0.2-rc.2] - 2026-03-29
 
 ### Fixed
@@ -43,7 +77,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive documentation and examples
 - Benchmark setup for lookup operations
 - Feature flags for optional serde support
-
-## [Unreleased]
-
-## [0.1.1] - 2026-03-30

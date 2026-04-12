@@ -15,7 +15,7 @@ readme = "README.md"
 arrow = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }
-medcodes = { version = "0.1.0", path = "../medcodes", optional = true }
+medcodes = { version = "0.2.0", path = "../medcodes", optional = true }
 serde = { workspace = true, optional = true }
 
 [dev-dependencies]
