@@ -84,3 +84,4 @@ criterion/
 # Temporary files
 *.tmp
 *.temp
+.skill/
