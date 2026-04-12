@@ -52,5 +52,10 @@ jobs:
       - name: Build documentation
         run: cargo doc --workspace --no-deps
 
+      - name: Clear advisory cache (Windows)
+        if: matrix.os == 'windows-latest'
+        run: Remove-Item -Recurse -Force "$env:CARGO_HOME\advisory-dbs" -ErrorAction SilentlyContinue
+        shell: pwsh
+
       - name: Run cargo-deny
         run: cargo deny check
