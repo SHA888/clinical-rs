@@ -106,18 +106,22 @@ fn cmd_convert(input: &PathBuf, output: &PathBuf, format: &str, version: u8, tab
     );
 
     for table in &table_list {
+        // Try .csv first, fall back to .csv.gz
         let csv_path = input.join(format!("{table}.csv"));
-        if !csv_path.exists() {
-            // Try with .csv.gz extension
+        let file_path = if csv_path.exists() {
+            csv_path
+        } else {
             let gz_path = input.join(format!("{table}.csv.gz"));
-            if !gz_path.exists() {
-                eprintln!("  Skipping {table}: file not found");
+            if gz_path.exists() {
+                gz_path
+            } else {
+                eprintln!("  Skipping {table}: file not found (.csv or .csv.gz)");
                 continue;
             }
-        }
+        };
 
         print!("  {table}...");
-        match reader.read_table(table, &csv_path) {
+        match reader.read_table(table, &file_path) {
             Ok(batches) => {
                 let out_path = match format {
                     "parquet" => output.join(format!("{}.parquet", table.to_lowercase())),
@@ -156,6 +160,8 @@ fn cmd_schema() {
 }
 
 fn cmd_info(input: &PathBuf) {
+    use std::io::{BufRead, BufReader};
+
     println!("MIMIC CSV files in {}:", input.display());
     println!();
 
@@ -174,10 +180,11 @@ fn cmd_info(input: &PathBuf) {
             found = true;
             let name = path.file_stem().unwrap_or_default().to_string_lossy();
 
-            // Count rows (header + data)
-            match std::fs::read_to_string(&path) {
-                Ok(content) => {
-                    let line_count = content.lines().count();
+            // Count rows using buffered reader (handles multi-GB files)
+            match std::fs::File::open(&path) {
+                Ok(file) => {
+                    let reader = BufReader::new(file);
+                    let line_count = reader.lines().count();
                     let row_count = if line_count > 0 { line_count - 1 } else { 0 };
                     let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
                     println!(

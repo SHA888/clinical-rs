@@ -101,14 +101,14 @@ impl MimicCsvReader {
                 let mut values = Vec::new();
 
                 for record in chunk {
-                    subject_ids.push(
-                        record[col_indices["subject_id"]]
-                            .parse::<i64>()
-                            .unwrap_or(0),
-                    );
-                    hadm_ids.push(record[col_indices["hadm_id"]].parse::<i64>().ok());
+                    let subject_id = record[col_indices["subject_id"]]
+                        .parse::<i64>()
+                        .unwrap_or(0);
+                    let hadm_id = record[col_indices["hadm_id"]].parse::<i64>().ok();
 
-                    // Add admission event
+                    // Add admission event (always present)
+                    subject_ids.push(subject_id);
+                    hadm_ids.push(hadm_id);
                     charttimes.push(Some(
                         record[col_indices["admittime"]].parse::<i64>().unwrap_or(0),
                     ));
@@ -116,16 +116,26 @@ impl MimicCsvReader {
                     event_ids.push(Some("ADMISSION".to_string()));
                     values.push(Some("Admitted".to_string()));
 
-                    // Add discharge event if available
-                    if let Some(dischtime) = record.get(col_indices["dischtime"]) {
+                    // Add discharge event if timestamp is non-empty
+                    let dischtime = record
+                        .get(col_indices["dischtime"])
+                        .map_or("", String::as_str);
+                    if !dischtime.is_empty() {
+                        subject_ids.push(subject_id);
+                        hadm_ids.push(hadm_id);
                         charttimes.push(Some(dischtime.parse::<i64>().unwrap_or(0)));
                         event_types.push("discharge".to_string());
                         event_ids.push(Some("DISCHARGE".to_string()));
                         values.push(Some("Discharged".to_string()));
                     }
 
-                    // Add death event if available
-                    if let Some(deathtime) = record.get(col_indices["deathtime"]) {
+                    // Add death event if timestamp is non-empty
+                    let deathtime = record
+                        .get(col_indices["deathtime"])
+                        .map_or("", String::as_str);
+                    if !deathtime.is_empty() {
+                        subject_ids.push(subject_id);
+                        hadm_ids.push(hadm_id);
                         charttimes.push(Some(deathtime.parse::<i64>().unwrap_or(0)));
                         event_types.push("death".to_string());
                         event_ids.push(Some("DEATH".to_string()));
@@ -176,13 +186,12 @@ impl MimicCsvReader {
                 let mut values = Vec::new();
 
                 for record in chunk {
-                    subject_ids.push(
-                        record[col_indices["subject_id"]]
-                            .parse::<i64>()
-                            .unwrap_or(0),
-                    );
+                    let subject_id = record[col_indices["subject_id"]]
+                        .parse::<i64>()
+                        .unwrap_or(0);
 
-                    // Add demographic events
+                    // Add gender event
+                    subject_ids.push(subject_id);
                     event_types.push("gender".to_string());
                     event_ids.push(Some("GENDER".to_string()));
                     values.push(
@@ -191,6 +200,8 @@ impl MimicCsvReader {
                             .map(std::string::ToString::to_string),
                     );
 
+                    // Add anchor_age event
+                    subject_ids.push(subject_id);
                     event_types.push("anchor_age".to_string());
                     event_ids.push(Some("ANCHOR_AGE".to_string()));
                     values.push(
@@ -199,6 +210,8 @@ impl MimicCsvReader {
                             .map(std::string::ToString::to_string),
                     );
 
+                    // Add anchor_year event
+                    subject_ids.push(subject_id);
                     event_types.push("anchor_year".to_string());
                     event_ids.push(Some("ANCHOR_YEAR".to_string()));
                     values.push(
