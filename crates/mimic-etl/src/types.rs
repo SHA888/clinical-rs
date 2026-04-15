@@ -36,11 +36,36 @@ pub enum EtlError {
     Config(String),
 }
 
+/// MIMIC dataset version.
+///
+/// MIMIC-III uses UPPERCASE column names and has slightly different table
+/// schemas. MIMIC-IV uses lowercase column names. The ETL layer normalizes
+/// both to lowercase automatically.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MimicVersion {
+    /// MIMIC-III (v1.4) — UPPERCASE column names, ICD-9-CM codes
+    MimicIII,
+    /// MIMIC-IV (v2.x/v3.x) — lowercase column names, ICD-10-CM codes
+    MimicIV,
+}
+
+impl std::fmt::Display for MimicVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MimicIII => write!(f, "MIMIC-III"),
+            Self::MimicIV => write!(f, "MIMIC-IV"),
+        }
+    }
+}
+
 /// Configuration for ETL operations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DatasetConfig {
     /// Root path containing MIMIC CSV files
     pub root_path: String,
+
+    /// MIMIC version (affects column name handling and ICD version detection)
+    pub version: MimicVersion,
 
     /// Which tables to process
     pub tables: Vec<String>,
@@ -56,6 +81,30 @@ pub struct DatasetConfig {
 }
 
 impl DatasetConfig {
+    /// Create a configuration for MIMIC-III datasets.
+    #[must_use]
+    pub fn mimic_iii(root_path: impl Into<String>) -> Self {
+        Self {
+            root_path: root_path.into(),
+            version: MimicVersion::MimicIII,
+            tables: vec![
+                "ADMISSIONS".to_string(),
+                "PATIENTS".to_string(),
+                "DIAGNOSES_ICD".to_string(),
+                "PROCEDURES_ICD".to_string(),
+                "PRESCRIPTIONS".to_string(),
+                "LABEVENTS".to_string(),
+                "ICUSTAYS".to_string(),
+                "CHARTEVENTS".to_string(),
+                "INPUTEVENTS_MV".to_string(),
+                "OUTPUTEVENTS".to_string(),
+                "MICROBIOLOGYEVENTS".to_string(),
+                "TRANSFERS".to_string(),
+            ],
+            ..Self::default()
+        }
+    }
+
     /// Finish configuration and validate settings.
     ///
     /// # Errors
@@ -69,6 +118,7 @@ impl Default for DatasetConfig {
     fn default() -> Self {
         Self {
             root_path: "data/mimic-iv".to_string(),
+            version: MimicVersion::MimicIV,
             tables: vec![
                 "admissions".to_string(),
                 "patients".to_string(),

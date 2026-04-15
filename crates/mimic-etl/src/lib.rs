@@ -14,7 +14,13 @@ pub mod arrow_writer;
 pub mod csv_reader;
 pub mod types;
 
+#[cfg(feature = "medcodes")]
+pub mod code_normalizer;
+
 // Re-export commonly used types
 pub use arrow_writer::{StreamingArrowWriter, to_arrow_ipc, to_parquet};
 pub use csv_reader::MimicCsvReader;
-pub use types::{ClinicalEvent, DatasetConfig, EtlError, Result};
+pub use types::{ClinicalEvent, DatasetConfig, EtlError, MimicVersion, Result};
+
+#[cfg(feature = "medcodes")]
+pub use code_normalizer::CodeNormalizer;

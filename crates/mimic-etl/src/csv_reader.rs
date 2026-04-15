@@ -32,6 +32,10 @@ impl MimicCsvReader {
     ) -> Result<Vec<RecordBatch>> {
         let csv_path = csv_path.as_ref();
 
+        // Normalize table name to lowercase (MIMIC-III uses UPPERCASE names)
+        // Also handle MIMIC-III specific table name aliases
+        let table_name = normalize_table_name(table_name);
+
         // Create CSV reader (simplified without memmap for now)
         let mut rdr = ReaderBuilder::new().has_headers(true).from_path(csv_path)?;
 
@@ -52,7 +56,7 @@ impl MimicCsvReader {
             .collect::<std::result::Result<_, _>>()?;
 
         // Convert to RecordBatches based on table type
-        match table_name {
+        match table_name.as_str() {
             "admissions" => self.convert_admissions(&headers, &records),
             "patients" => self.convert_patients(&headers, &records),
             "diagnoses_icd" => self.convert_diagnoses_icd(&headers, &records),
@@ -1149,7 +1153,24 @@ impl MimicCsvReader {
     }
 }
 
+/// Normalize a table name to its canonical lowercase form.
+///
+/// Handles MIMIC-III specific table name aliases:
+/// - `INPUTEVENTS_MV` / `INPUTEVENTS_CV` → `inputevents`
+/// - All other names are lowercased as-is
+fn normalize_table_name(name: &str) -> String {
+    let lower = name.to_lowercase();
+    match lower.as_str() {
+        "inputevents_mv" | "inputevents_cv" => "inputevents".to_string(),
+        other => other.to_string(),
+    }
+}
+
 /// Get column indices for required columns from CSV headers.
+///
+/// Column matching is case-insensitive, so both MIMIC-III (UPPERCASE)
+/// and MIMIC-IV (lowercase) column names are accepted. The returned
+/// map always uses the lowercase column name as the key.
 fn get_column_indices(
     headers: &csv::StringRecord,
     required: &[&str],
@@ -1157,12 +1178,77 @@ fn get_column_indices(
     let mut indices = HashMap::new();
 
     for &col_name in required {
+        let lower = col_name.to_lowercase();
         let index = headers
             .iter()
-            .position(|h| h == col_name)
+            .position(|h| h.eq_ignore_ascii_case(col_name))
             .ok_or_else(|| EtlError::MissingColumn(col_name.to_string()))?;
-        let _ = indices.insert(col_name.to_string(), index);
+        let _ = indices.insert(lower, index);
     }
 
     Ok(indices)
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used)]
+
+    use super::*;
+
+    #[test]
+    fn test_normalize_table_name_lowercase() {
+        assert_eq!(normalize_table_name("admissions"), "admissions");
+        assert_eq!(normalize_table_name("patients"), "patients");
+        assert_eq!(normalize_table_name("diagnoses_icd"), "diagnoses_icd");
+    }
+
+    #[test]
+    fn test_normalize_table_name_uppercase() {
+        assert_eq!(normalize_table_name("ADMISSIONS"), "admissions");
+        assert_eq!(normalize_table_name("PATIENTS"), "patients");
+        assert_eq!(normalize_table_name("DIAGNOSES_ICD"), "diagnoses_icd");
+    }
+
+    #[test]
+    fn test_normalize_table_name_mimic_iii_aliases() {
+        assert_eq!(normalize_table_name("INPUTEVENTS_MV"), "inputevents");
+        assert_eq!(normalize_table_name("INPUTEVENTS_CV"), "inputevents");
+        assert_eq!(normalize_table_name("inputevents_mv"), "inputevents");
+        assert_eq!(normalize_table_name("inputevents_cv"), "inputevents");
+    }
+
+    #[test]
+    fn test_get_column_indices_case_insensitive() {
+        let mut headers = csv::StringRecord::new();
+        headers.push_field("SUBJECT_ID");
+        headers.push_field("HADM_ID");
+        headers.push_field("ADMITTIME");
+
+        let result = get_column_indices(&headers, &["subject_id", "hadm_id", "admittime"]);
+        let indices = result.unwrap();
+        assert_eq!(indices["subject_id"], 0);
+        assert_eq!(indices["hadm_id"], 1);
+        assert_eq!(indices["admittime"], 2);
+    }
+
+    #[test]
+    fn test_get_column_indices_lowercase_headers() {
+        let mut headers = csv::StringRecord::new();
+        headers.push_field("subject_id");
+        headers.push_field("hadm_id");
+
+        let result = get_column_indices(&headers, &["subject_id", "hadm_id"]);
+        let indices = result.unwrap();
+        assert_eq!(indices["subject_id"], 0);
+        assert_eq!(indices["hadm_id"], 1);
+    }
+
+    #[test]
+    fn test_get_column_indices_missing_column() {
+        let mut headers = csv::StringRecord::new();
+        headers.push_field("subject_id");
+
+        let result = get_column_indices(&headers, &["subject_id", "nonexistent"]);
+        assert!(result.is_err());
+    }
 }

@@ -465,19 +465,19 @@ Parse the most commonly used MIMIC-IV (v2.x) tables into Arrow.
 
 ### v0.2.0 — MIMIC-III + Performance
 
-- [ ] **MIMIC-III (v1.4) support**
-  - [ ] All core table parsers (ADMISSIONS, PATIENTS, DIAGNOSES_ICD, etc.)
-  - [ ] Column name normalization (UPPER → lowercase)
-- [ ] **Optional `medcodes` integration** (feature flag)
-  - [ ] Code normalization during parsing
-  - [ ] Auto-detect ICD-9 vs ICD-10 by MIMIC version
-- [ ] **Performance benchmarks**
-  - [ ] `criterion` suite on MIMIC-IV demo dataset (public)
+- [x] **MIMIC-III (v1.4) support**
+  - [x] All core table parsers (ADMISSIONS, PATIENTS, DIAGNOSES_ICD, etc.)
+  - [x] Column name normalization (UPPER → lowercase)
+- [x] **Optional `medcodes` integration** (feature flag)
+  - [x] Code normalization during parsing
+  - [x] Auto-detect ICD-9 vs ICD-10 by MIMIC version
+- [x] **Performance benchmarks**
+  - [x] `criterion` suite on synthetic MIMIC data
   - [ ] Wall time + peak memory comparison methodology documented
-- [ ] **CLI tool** (feature flag: `cli`)
-  - [ ] `mimic-etl convert --input <path> --output <path> --format parquet`
-  - [ ] `mimic-etl schema` — print ClinicalEvent Arrow schema
-  - [ ] `mimic-etl info --input <path>` — table row counts
+- [x] **CLI tool** (feature flag: `cli`)
+  - [x] `mimic-etl convert --input <path> --output <path> --format parquet`
+  - [x] `mimic-etl schema` — print ClinicalEvent Arrow schema
+  - [x] `mimic-etl info --input <path>` — table row counts
 
 ### v0.3.0 — MIMIC-IV v3.x + Notes + ED
 
