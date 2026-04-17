@@ -11,13 +11,12 @@
 //! ```
 
 #![allow(clippy::cast_precision_loss, clippy::must_use_candidate)]
-#![allow(unused_imports)]
 
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
 use clinical_tasks::{
-    AnchorPoint, PatientEvent, Result, SplitConfig, TaskDefinition, TaskError, TaskOutput,
-    TaskWindows, extract_task_windows, outputs_to_batch, split_by_patient,
+    AnchorPoint, PatientEvent, Result, TaskDefinition, TaskError, TaskOutput, TaskWindows,
+    extract_task_windows,
 };
 use std::collections::HashMap;
 
