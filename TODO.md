@@ -535,11 +535,30 @@ Minimal task windowing engine with one fully implemented task.
 
 ### v0.2.0 — Task Expansion + Longevity Module
 
-- [ ] **30-day readmission prediction** (binary, anchor: discharge)
-- [ ] **Length of stay prediction** (multiclass bucketed + regression variant)
-- [ ] **Drug recommendation** (multi-label, optional DDI matrix)
-- [ ] **Optional `medcodes` integration** (feature flag, code grouping for features)
-- [ ] **Custom task API** (docs + example for `TaskDefinition` implementors)
+- [x] **30-day readmission prediction** (binary, anchor: discharge)
+  - [x] `ReadmissionPrediction` struct with configurable readmission window
+  - [x] Features: demographics, counts, LOS, surgery flag
+  - [x] Label: readmitted within 30 days (configurable)
+- [x] **Length of stay prediction** (multiclass bucketed + regression variant)
+  - [x] `LengthOfStayPrediction` with `LosTarget` enum (Buckets/Regression)
+  - [x] `LosBucket` enum: Short(0-1d), Medium(2-3d), Long(4-7d), Extended(8d+)
+  - [x] Constructor helpers: `buckets()` and `regression()`
+- [x] **Drug recommendation** (multi-label, optional DDI matrix)
+  - [x] `DrugRecommendation` with 10 drug classes
+  - [x] `DrugClass` enum: Antibiotics, Anticoagulants, Antihypertensives, etc.
+  - [x] Optional DDI matrix with safety filtering
+  - [x] Multi-label output with clinical indicator features
+- [x] **Optional `medcodes` integration** (feature flag, code grouping for features)
+  - [x] `code_grouping` module with `#[cfg(feature = "medcodes")]`
+  - [x] `CodeGrouper` struct for ICD-9/ICD-10 categorization
+  - [x] `IcdVersion` enum for version selection
+  - [x] `GroupedFeatureExtractor` trait for diagnosis counting by category
+  - [x] CCSR-style body system categories (21 major categories)
+- [x] **Custom task API** (docs + example for `TaskDefinition` implementors)
+  - [x] `examples/custom_task.rs` - complete working example
+  - [x] `IcuAdmissionPrediction` example task implementation
+  - [x] Documentation on implementing `TaskDefinition` trait
+  - [x] Usage of `extract_task_windows()`, `outputs_to_batch()`, `split_by_patient()`
 - [ ] **Longevity module** (`features = ["longevity"]`) — post-critical-illness biological age acceleration signals
   - [ ] **Module scaffold**
     - [ ] `crates/clinical-tasks/src/longevity/mod.rs` — `pub use`, feature-gated re-exports

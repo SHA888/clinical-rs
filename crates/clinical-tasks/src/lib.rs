@@ -14,16 +14,29 @@
 //! - Time-based windowing of clinical events
 //! - Feature extraction from event streams
 //! - ML-ready dataset generation
-//! - In-hospital mortality prediction task
+//! - Prediction tasks:
+//!   - In-hospital mortality prediction
+//!   - 30-day readmission prediction
+//!   - Length of stay prediction (multiclass + regression)
+//!   - Drug recommendation (multi-label with optional DDI safety)
 
 pub mod features;
 pub mod types;
 pub mod windowing;
 
+#[cfg(feature = "medcodes")]
+pub mod code_grouping;
+
 // Re-export commonly used types
-pub use features::{MortalityPrediction, outputs_to_batch, split_by_patient};
+pub use features::{
+    DrugClass, DrugRecommendation, LengthOfStayPrediction, LosBucket, LosTarget,
+    MortalityPrediction, ReadmissionPrediction, outputs_to_batch, split_by_patient,
+};
 pub use types::{
     AnchorPoint, PatientEvent, Result, SplitConfig, TaskDefinition, TaskError, TaskOutput,
     TaskWindows,
 };
 pub use windowing::{TaskRunner, extract_task_windows, group_and_sort_events};
+
+#[cfg(feature = "medcodes")]
+pub use code_grouping::{CodeGrouper, GroupedFeatureExtractor, IcdVersion};
