@@ -26,6 +26,7 @@ tempfile = { workspace = true }
 default = ["serde"]
 medcodes = ["dep:medcodes"]
 serde = ["dep:serde"]
+longevity = []
 
 [[bench]]
 name = "windowing"

@@ -560,27 +560,27 @@ Minimal task windowing engine with one fully implemented task.
   - [x] Documentation on implementing `TaskDefinition` trait
   - [x] Usage of `extract_task_windows()`, `outputs_to_batch()`, `split_by_patient()`
 - [ ] **Longevity module** (`features = ["longevity"]`) — post-critical-illness biological age acceleration signals
-  - [ ] **Module scaffold**
-    - [ ] `crates/clinical-tasks/src/longevity/mod.rs` — `pub use`, feature-gated re-exports
-    - [ ] `crates/clinical-tasks/src/longevity/signals.rs` — `LongevitySignals` struct, all fields `Option<T>`
-    - [ ] `crates/clinical-tasks/src/longevity/senescence.rs` — `SaspComposite`, `SenescenceScore`, `FunctionalTrajectory`
-    - [ ] `crates/clinical-tasks/src/longevity/clock.rs` — `BiologicalAgeDelta`, `ClockVersion`, `CalibrationStatus` stub
-    - [ ] Feature flag wired: `longevity = []` in `Cargo.toml` (no additional deps at MVP)
-    - [ ] `#[cfg(feature = "longevity")]` on all longevity types and module declaration in `lib.rs`
-  - [ ] **`LongevitySignals` struct** (`signals.rs`)
-    - [ ] `biological_age_delta: Option<BiologicalAgeDelta>`
-    - [ ] `gdf15_pgml: Option<f32>`
-    - [ ] `il6_pgml: Option<f32>`
-    - [ ] `il8_pgml: Option<f32>`
-    - [ ] `mmp3_ngml: Option<f32>`
-    - [ ] `p16_relative_expression: Option<f32>`
-    - [ ] `sasp_composite_score: Option<SaspComposite>`
-    - [ ] `post_icu_functional_trajectory: Option<FunctionalTrajectory>`
+  - [x] **Module scaffold**
+    - [x] `crates/clinical-tasks/src/longevity/mod.rs` — `pub use`, feature-gated re-exports
+    - [x] `crates/clinical-tasks/src/longevity/signals.rs` — `LongevitySignals` struct, all fields `Option<T>`
+    - [x] `crates/clinical-tasks/src/longevity/senescence.rs` — `SaspComposite`, `SenescenceScore`, `FunctionalTrajectory`
+    - [x] `crates/clinical-tasks/src/longevity/clock.rs` — `BiologicalAgeDelta`, `ClockVersion`, `CalibrationStatus` stub
+    - [x] Feature flag wired: `longevity = []` in `Cargo.toml` (no additional deps at MVP)
+    - [x] `#[cfg(feature = "longevity")]` on all longevity types and module declaration in `lib.rs`
+  - [x] **`LongevitySignals` struct** (`signals.rs`)
+    - [x] `biological_age_delta: Option<BiologicalAgeDelta>`
+    - [x] `gdf15_pgml: Option<f32>`
+    - [x] `il6_pgml: Option<f32>`
+    - [x] `il8_pgml: Option<f32>`
+    - [x] `mmp3_ngml: Option<f32>`
+    - [x] `p16_relative_expression: Option<f32>`
+    - [x] `sasp_composite_score: Option<SaspComposite>`
+    - [x] `post_icu_functional_trajectory: Option<FunctionalTrajectory>`
     - [ ] `serde` feature parity: `Serialize`/`Deserialize` via workspace `serde` dep
-  - [ ] **`SaspComposite`** (`senescence.rs`)
-    - [ ] Weighted composite: IL-6 + IL-8 + GDF-15 + MMP-3 (weights TBD from literature; document source)
-    - [ ] `SaspComposite::compute(signals: &LongevitySignals) → Option<SaspComposite>`
-    - [ ] Returns `None` if fewer than 2 of 4 components are present
+  - [x] **`SaspComposite`** (`senescence.rs`)
+    - [x] Weighted composite: IL-6 + IL-8 + GDF-15 + MMP-3 (weights TBD from literature; document source)
+    - [x] `SaspComposite::compute(signals: &LongevitySignals) → Option<SaspComposite>`
+    - [x] Returns `None` if fewer than 2 of 4 components are present
   - [ ] **`FunctionalTrajectory`** (`senescence.rs`)
     - [ ] Variants: `Pics`, `Recovering`, `Recovered`
     - [ ] Rustdoc: cite Mira et al. 2017 (*Front Immunol*) PICS criteria

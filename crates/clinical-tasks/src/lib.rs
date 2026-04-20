@@ -27,6 +27,9 @@ pub mod windowing;
 #[cfg(feature = "medcodes")]
 pub mod code_grouping;
 
+#[cfg(feature = "longevity")]
+pub mod longevity;
+
 // Re-export commonly used types
 pub use features::{
     DrugClass, DrugRecommendation, LengthOfStayPrediction, LosBucket, LosTarget,
@@ -40,3 +43,9 @@ pub use windowing::{TaskRunner, extract_task_windows, group_and_sort_events};
 
 #[cfg(feature = "medcodes")]
 pub use code_grouping::{CodeGrouper, GroupedFeatureExtractor, IcdVersion};
+
+#[cfg(feature = "longevity")]
+pub use longevity::{
+    BiologicalAgeDelta, CalibrationStatus, ClockVersion, FunctionalTrajectory, LongevitySignals,
+    SaspComposite, SenescenceScore,
+};
