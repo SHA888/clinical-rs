@@ -210,79 +210,153 @@ impl SenescenceScore {
     }
 }
 
-/// Functional trajectory following critical illness.
+/// Functional recovery trajectory following critical illness.
 ///
-/// Tracks patient functional status changes over time, indicating
-/// recovery pace or lack thereof (post-ICU syndrome).
-#[derive(Debug, Clone, PartialEq, Default)]
+/// Categorizes post-ICU functional status based on the PICS (Persistent
+/// Inflammation, Immunosuppression, and Catabolism Syndrome) framework.
+///
+/// # PICS Criteria
+/// Post-ICU syndrome is characterized by a constellation of new or worsening
+/// impairments after critical illness. See Mira et al. (2017) *Frontiers in
+/// Immunology* "Post-Intensive Care Syndrome, Inflammation, and Cognitive
+/// Impairment" for clinical characterization of persistent inflammation and
+/// functional decline following ICU discharge.
+#[derive(Debug, Clone, PartialEq)]
 #[cfg(feature = "longevity")]
-pub struct FunctionalTrajectory {
-    /// Baseline functional status before illness (e.g., 0-100 scale)
-    pub baseline_status: Option<f64>,
+pub enum FunctionalTrajectory {
+    /// Persistent Post-ICU Syndrome (PICS): ongoing inflammation, catabolism,
+    /// or functional impairment with failure to recover toward baseline.
+    ///
+    /// Patient exhibits ≥1 PICS domains:
+    /// - Cognitive impairment
+    /// - Mental health impairment (depression, anxiety, PTSD)
+    /// - Physical impairment (ICU-acquired weakness, impaired mobility)
+    Pics {
+        /// Days since ICU discharge
+        days_post_icu: u32,
+        /// Baseline functional status before illness (e.g., 0–100 scale)
+        baseline_status: Option<f64>,
+        /// Current functional status score (e.g., 0–100 scale)
+        current_status: f64,
+        /// ADL (Activities of Daily Living) score if available
+        adl_score: Option<f64>,
+        /// IADL (Instrumental ADL) score if available
+        iadl_score: Option<f64>,
+        /// 6-minute walk test distance (meters)
+        walk_test_distance: Option<f64>,
+        /// Hand grip strength (kg)
+        grip_strength: Option<f64>,
+    },
 
-    /// Current functional status
-    pub current_status: Option<f64>,
+    /// Actively recovering: showing improvement but not yet at baseline.
+    ///
+    /// Patient is on an upward trajectory but remains below pre-illness
+    /// functional status. Recovery rate indicates pace of improvement.
+    Recovering {
+        /// Days since ICU discharge
+        days_post_icu: u32,
+        /// Baseline functional status before illness (e.g., 0–100 scale)
+        baseline_status: f64,
+        /// Current functional status
+        current_status: f64,
+        /// Rate of change (status points per week); positive = improving
+        recovery_rate: f64,
+        /// ADL score if available
+        adl_score: Option<f64>,
+        /// IADL score if available
+        iadl_score: Option<f64>,
+        /// 6-minute walk test distance (meters)
+        walk_test_distance: Option<f64>,
+        /// Hand grip strength (kg)
+        grip_strength: Option<f64>,
+    },
 
-    /// Days since ICU discharge
-    pub days_post_icu: Option<u32>,
-
-    /// Rate of change (status points per week)
-    pub recovery_rate: Option<f64>,
-
-    /// Expected recovery trajectory based on demographics/diagnosis
-    pub expected_trajectory: Option<Vec<f64>>,
-
-    /// Actual measured trajectory points
-    pub actual_trajectory: Option<Vec<f64>>,
-
-    /// ADL (Activities of Daily Living) score
-    pub adl_score: Option<f64>,
-
-    /// IADL (Instrumental ADL) score
-    pub iadl_score: Option<f64>,
-
-    /// 6-minute walk test distance (meters)
-    pub walk_test_distance: Option<f64>,
-
-    /// Hand grip strength (kg)
-    pub grip_strength: Option<f64>,
+    /// Recovered: returned to baseline functional status or better.
+    ///
+    /// Patient has achieved pre-illness functional capacity. May still have
+    /// residual symptoms but overall functional status is restored.
+    Recovered {
+        /// Days since ICU discharge when recovery was achieved
+        days_post_icu: u32,
+        /// Final functional status at recovery
+        final_status: f64,
+        /// ADL score at recovery
+        adl_score: Option<f64>,
+        /// IADL score at recovery
+        iadl_score: Option<f64>,
+    },
 }
 
 #[cfg(feature = "longevity")]
 impl FunctionalTrajectory {
-    /// Create a new empty functional trajectory.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Calculate the functional delta from baseline.
+    /// Days since ICU discharge.
     ///
-    /// Returns `None` if either baseline or current status is missing.
+    /// All variants track `days_post_icu`, so this never returns `None`.
     #[must_use]
-    pub fn functional_delta(&self) -> Option<f64> {
-        match (self.baseline_status, self.current_status) {
-            (Some(baseline), Some(current)) => Some(current - baseline),
-            _ => None,
+    pub fn days_post_icu(&self) -> u32 {
+        match self {
+            Self::Pics { days_post_icu, .. }
+            | Self::Recovering { days_post_icu, .. }
+            | Self::Recovered { days_post_icu, .. } => *days_post_icu,
         }
     }
 
-    /// Check if the patient is recovering (improving) relative to baseline.
+    /// Functional status score.
     ///
-    /// Returns `None` if data is insufficient.
+    /// - `Pics` / `Recovering`: returns the **current** status (may change over time)
+    /// - `Recovered`: returns the **final** status at time of recovery (static)
+    ///
+    /// Use `is_recovered()` to determine if this is a final value.
     #[must_use]
-    pub fn is_recovering(&self) -> Option<bool> {
-        self.functional_delta().map(|delta| delta > 0.0)
+    pub fn status(&self) -> f64 {
+        match self {
+            Self::Pics { current_status, .. } | Self::Recovering { current_status, .. } => {
+                *current_status
+            }
+            Self::Recovered { final_status, .. } => *final_status,
+        }
     }
 
-    /// Check if the patient has reached their baseline.
-    ///
-    /// Uses a tolerance of 5 status points.
+    /// Check if the trajectory indicates active recovery (Recovering variant).
     #[must_use]
-    pub fn at_baseline(&self) -> Option<bool> {
-        match (self.baseline_status, self.current_status) {
-            (Some(baseline), Some(current)) => Some((current - baseline).abs() < 5.0),
-            _ => None,
+    pub fn is_recovering(&self) -> bool {
+        matches!(self, Self::Recovering { .. })
+    }
+
+    /// Check if the patient has recovered (Recovered variant).
+    #[must_use]
+    pub fn is_recovered(&self) -> bool {
+        matches!(self, Self::Recovered { .. })
+    }
+
+    /// Check if the patient is in PICS (Pics variant).
+    #[must_use]
+    pub fn is_pics(&self) -> bool {
+        matches!(self, Self::Pics { .. })
+    }
+
+    /// Calculate functional delta from baseline.
+    ///
+    /// Returns `current_status - baseline_status`. Positive values indicate
+    /// improvement above baseline; negative values indicate impairment.
+    ///
+    /// - `Recovering`: always returns `Some(delta)` (baseline is mandatory)
+    /// - `Pics`: returns `Some(delta)` if `baseline_status` is present, else `None`
+    /// - `Recovered`: returns `None` (delta already resolved to final status)
+    #[must_use]
+    pub fn functional_delta(&self) -> Option<f64> {
+        match self {
+            Self::Recovering {
+                baseline_status,
+                current_status,
+                ..
+            } => Some(current_status - baseline_status),
+            Self::Pics {
+                baseline_status,
+                current_status,
+                ..
+            } => baseline_status.map(|baseline| current_status - baseline),
+            Self::Recovered { .. } => None,
         }
     }
 }

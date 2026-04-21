@@ -85,3 +85,5 @@ criterion/
 *.tmp
 *.temp
 .skill/
+.cursor/rules/skill-context.md
+.windsurf/rules/skill-context.md

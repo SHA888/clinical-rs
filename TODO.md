@@ -581,9 +581,9 @@ Minimal task windowing engine with one fully implemented task.
     - [x] Weighted composite: IL-6 + IL-8 + GDF-15 + MMP-3 (weights TBD from literature; document source)
     - [x] `SaspComposite::compute(signals: &LongevitySignals) → Option<SaspComposite>`
     - [x] Returns `None` if fewer than 2 of 4 components are present
-  - [ ] **`FunctionalTrajectory`** (`senescence.rs`)
-    - [ ] Variants: `Pics`, `Recovering`, `Recovered`
-    - [ ] Rustdoc: cite Mira et al. 2017 (*Front Immunol*) PICS criteria
+  - [x] **`FunctionalTrajectory`** (`senescence.rs`)
+    - [x] Variants: `Pics`, `Recovering`, `Recovered`
+    - [x] Rustdoc: cite Mira et al. 2017 (*Front Immunol*) PICS criteria
   - [ ] **`BiologicalAgeDelta`** (`clock.rs`)
     - [ ] Fields: `value: f32`, `clock_version: ClockVersion`, `calibration_status: CalibrationStatus`
     - [ ] `ClockVersion` enum: `Horvath2013`, `PhenoAge`, `GrimAge2`
