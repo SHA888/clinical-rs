@@ -7,7 +7,7 @@
 //! All types are feature-gated behind the `longevity` feature flag.
 
 #[cfg(feature = "longevity")]
-pub use clock::{BiologicalAgeDelta, CalibrationStatus, ClockVersion};
+pub use clock::{BiologicalAgeDelta, CalibrationStatus, ClockVersion, PaceOfAgeDelta};
 #[cfg(feature = "longevity")]
 pub use senescence::{FunctionalTrajectory, SaspComposite, SenescenceScore};
 #[cfg(feature = "longevity")]

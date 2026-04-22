@@ -584,12 +584,12 @@ Minimal task windowing engine with one fully implemented task.
   - [x] **`FunctionalTrajectory`** (`senescence.rs`)
     - [x] Variants: `Pics`, `Recovering`, `Recovered`
     - [x] Rustdoc: cite Mira et al. 2017 (*Front Immunol*) PICS criteria
-  - [ ] **`BiologicalAgeDelta`** (`clock.rs`)
-    - [ ] Fields: `value: f32`, `clock_version: ClockVersion`, `calibration_status: CalibrationStatus`
-    - [ ] `ClockVersion` enum: `Horvath2013`, `PhenoAge`, `GrimAge2`
-    - [ ] `CalibrationStatus` enum: `Uncalibrated`, `PendingValidation`, `Validated { cohort_n: u32 }`
-    - [ ] Rustdoc on `BiologicalAgeDelta`: mandatory calibration warning — SEA population, unquantified bias
-    - [ ] `CalibrationStatus::Uncalibrated` is the default; no silent use as quantitative output
+  - [x] **`BiologicalAgeDelta`** (`clock.rs`)
+    - [x] Fields: `value: f32`, `clock_version: ClockVersion`, `calibration_status: CalibrationStatus`
+    - [x] `ClockVersion` enum: `Horvath2013`, `PhenoAge`, `GrimAge2`
+    - [x] `CalibrationStatus` enum: `Uncalibrated`, `PendingValidation`, `Validated { cohort_n: u32 }`
+    - [x] Rustdoc on `BiologicalAgeDelta`: mandatory calibration warning — SEA population, unquantified bias
+    - [x] `CalibrationStatus::Uncalibrated` is the default; no silent use as quantitative output
   - [ ] **Arrow schema extension** — `LongevitySignals` fields appended as nullable columns to post-ICU task output
     - [ ] `biological_age_delta` → `Float32` (NULLABLE)
     - [ ] `calibration_status` → `Utf8` (NULLABLE, enum serialized as string)

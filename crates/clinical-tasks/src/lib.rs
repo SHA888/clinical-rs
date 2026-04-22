@@ -47,5 +47,5 @@ pub use code_grouping::{CodeGrouper, GroupedFeatureExtractor, IcdVersion};
 #[cfg(feature = "longevity")]
 pub use longevity::{
     BiologicalAgeDelta, CalibrationStatus, ClockVersion, FunctionalTrajectory, LongevitySignals,
-    SaspComposite, SenescenceScore,
+    PaceOfAgeDelta, SaspComposite, SenescenceScore,
 };
