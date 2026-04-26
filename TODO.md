@@ -590,12 +590,12 @@ Minimal task windowing engine with one fully implemented task.
     - [x] `CalibrationStatus` enum: `Uncalibrated`, `PendingValidation`, `Validated { cohort_n: u32 }`
     - [x] Rustdoc on `BiologicalAgeDelta`: mandatory calibration warning — SEA population, unquantified bias
     - [x] `CalibrationStatus::Uncalibrated` is the default; no silent use as quantitative output
-  - [ ] **Arrow schema extension** — `LongevitySignals` fields appended as nullable columns to post-ICU task output
-    - [ ] `biological_age_delta` → `Float32` (NULLABLE)
-    - [ ] `calibration_status` → `Utf8` (NULLABLE, enum serialized as string)
-    - [ ] `sasp_composite_score` → `Float32` (NULLABLE)
-    - [ ] `post_icu_functional_trajectory` → `Utf8` (NULLABLE)
-    - [ ] `p16_relative_expression` → `Float32` (NULLABLE)
+  - [x] **Arrow schema extension** — `LongevitySignals` fields appended as nullable columns to post-ICU task output
+    - [x] `biological_age_delta` → `Float32` (NULLABLE)
+    - [x] `calibration_status` → `Utf8` (NULLABLE, enum serialized as string)
+    - [x] `sasp_composite_score` → `Float32` (NULLABLE)
+    - [x] `post_icu_functional_trajectory` → `Utf8` (NULLABLE)
+    - [x] `p16_relative_expression` → `Float32` (NULLABLE)
   - [ ] **Tests**
     - [ ] `SaspComposite::compute` returns `None` with fewer than 2 inputs
     - [ ] `SaspComposite::compute` is deterministic given same inputs

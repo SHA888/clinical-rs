@@ -335,6 +335,18 @@ impl FunctionalTrajectory {
         matches!(self, Self::Pics { .. })
     }
 
+    /// Return a stable, single-word categorical label for Arrow `Utf8` columns.
+    ///
+    /// Unlike `{:?}`, this returns only the variant name, not embedded numeric fields.
+    #[must_use]
+    pub fn variant_name(&self) -> &'static str {
+        match self {
+            Self::Pics { .. } => "Pics",
+            Self::Recovering { .. } => "Recovering",
+            Self::Recovered { .. } => "Recovered",
+        }
+    }
+
     /// Calculate functional delta from baseline.
     ///
     /// Returns `current_status - baseline_status`. Positive values indicate

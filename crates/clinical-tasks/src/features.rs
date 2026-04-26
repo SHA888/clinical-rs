@@ -20,18 +20,25 @@ impl MortalityPrediction {
     /// Create a new mortality prediction task.
     #[must_use]
     pub fn new(windows: TaskWindows) -> Self {
-        let schema = Schema::new(vec![
-            Field::new("patient_id", DataType::Int64, false),
-            Field::new("admission_id", DataType::Int64, true),
-            Field::new("age", DataType::Float64, true),
-            Field::new("gender_male", DataType::Float64, false),
-            Field::new("num_diagnoses", DataType::Float64, false),
-            Field::new("num_procedures", DataType::Float64, false),
-            Field::new("num_medications", DataType::Float64, false),
-            Field::new("num_labs", DataType::Float64, false),
-            Field::new("abnormal_labs_ratio", DataType::Float64, false),
-            Field::new("label", DataType::Float64, false),
-        ]);
+        let fields = {
+            #[allow(unused_mut)]
+            let mut fields = vec![
+                Field::new("patient_id", DataType::Int64, false),
+                Field::new("admission_id", DataType::Int64, true),
+                Field::new("age", DataType::Float64, true),
+                Field::new("gender_male", DataType::Float64, false),
+                Field::new("num_diagnoses", DataType::Float64, false),
+                Field::new("num_procedures", DataType::Float64, false),
+                Field::new("num_medications", DataType::Float64, false),
+                Field::new("num_labs", DataType::Float64, false),
+                Field::new("abnormal_labs_ratio", DataType::Float64, false),
+                Field::new("label", DataType::Float64, false),
+            ];
+            #[cfg(feature = "longevity")]
+            append_longevity_schema_fields(&mut fields);
+            fields
+        };
+        let schema = Schema::new(fields);
 
         Self { windows, schema }
     }
@@ -216,19 +223,26 @@ impl ReadmissionPrediction {
     /// Create a new 30-day readmission prediction task.
     #[must_use]
     pub fn new(windows: TaskWindows) -> Self {
-        let schema = Schema::new(vec![
-            Field::new("patient_id", DataType::Int64, false),
-            Field::new("admission_id", DataType::Int64, true),
-            Field::new("age", DataType::Float64, true),
-            Field::new("gender_male", DataType::Float64, false),
-            Field::new("num_diagnoses", DataType::Float64, false),
-            Field::new("num_procedures", DataType::Float64, false),
-            Field::new("num_medications", DataType::Float64, false),
-            Field::new("num_labs", DataType::Float64, false),
-            Field::new("length_of_stay_hours", DataType::Float64, false),
-            Field::new("had_surgery", DataType::Float64, false),
-            Field::new("label", DataType::Float64, false),
-        ]);
+        let fields = {
+            #[allow(unused_mut)]
+            let mut fields = vec![
+                Field::new("patient_id", DataType::Int64, false),
+                Field::new("admission_id", DataType::Int64, true),
+                Field::new("age", DataType::Float64, true),
+                Field::new("gender_male", DataType::Float64, false),
+                Field::new("num_diagnoses", DataType::Float64, false),
+                Field::new("num_procedures", DataType::Float64, false),
+                Field::new("num_medications", DataType::Float64, false),
+                Field::new("num_labs", DataType::Float64, false),
+                Field::new("length_of_stay_hours", DataType::Float64, false),
+                Field::new("had_surgery", DataType::Float64, false),
+                Field::new("label", DataType::Float64, false),
+            ];
+            #[cfg(feature = "longevity")]
+            append_longevity_schema_fields(&mut fields);
+            fields
+        };
+        let schema = Schema::new(fields);
 
         Self {
             windows,
@@ -496,19 +510,26 @@ impl LengthOfStayPrediction {
     /// Create a new LOS prediction task with specified target type.
     #[must_use]
     pub fn new(windows: TaskWindows, target: LosTarget) -> Self {
-        let schema = Schema::new(vec![
-            Field::new("patient_id", DataType::Int64, false),
-            Field::new("admission_id", DataType::Int64, true),
-            Field::new("age", DataType::Float64, true),
-            Field::new("gender_male", DataType::Float64, false),
-            Field::new("num_diagnoses", DataType::Float64, false),
-            Field::new("num_procedures", DataType::Float64, false),
-            Field::new("num_medications", DataType::Float64, false),
-            Field::new("num_labs", DataType::Float64, false),
-            Field::new("abnormal_labs_ratio", DataType::Float64, false),
-            Field::new("emergency_admission", DataType::Float64, false),
-            Field::new("label", DataType::Float64, false),
-        ]);
+        let fields = {
+            #[allow(unused_mut)]
+            let mut fields = vec![
+                Field::new("patient_id", DataType::Int64, false),
+                Field::new("admission_id", DataType::Int64, true),
+                Field::new("age", DataType::Float64, true),
+                Field::new("gender_male", DataType::Float64, false),
+                Field::new("num_diagnoses", DataType::Float64, false),
+                Field::new("num_procedures", DataType::Float64, false),
+                Field::new("num_medications", DataType::Float64, false),
+                Field::new("num_labs", DataType::Float64, false),
+                Field::new("abnormal_labs_ratio", DataType::Float64, false),
+                Field::new("emergency_admission", DataType::Float64, false),
+                Field::new("label", DataType::Float64, false),
+            ];
+            #[cfg(feature = "longevity")]
+            append_longevity_schema_fields(&mut fields);
+            fields
+        };
+        let schema = Schema::new(fields);
 
         Self {
             windows,
@@ -798,29 +819,35 @@ impl DrugRecommendation {
     #[must_use]
     pub fn new(windows: TaskWindows) -> Self {
         let num_classes = DrugClass::COUNT;
-        let mut fields = vec![
-            Field::new("patient_id", DataType::Int64, false),
-            Field::new("admission_id", DataType::Int64, true),
-            Field::new("age", DataType::Float64, true),
-            Field::new("gender_male", DataType::Float64, false),
-            Field::new("num_diagnoses", DataType::Float64, false),
-            Field::new("num_active_meds", DataType::Float64, false),
-            Field::new("has_infection", DataType::Float64, false),
-            Field::new("has_pain", DataType::Float64, false),
-            Field::new("has_hypertension", DataType::Float64, false),
-            Field::new("has_diabetes", DataType::Float64, false),
-            Field::new("has_copd", DataType::Float64, false),
-            Field::new("renal_impairment", DataType::Float64, false),
-        ];
+        let fields = {
+            #[allow(unused_mut)]
+            let mut fields = vec![
+                Field::new("patient_id", DataType::Int64, false),
+                Field::new("admission_id", DataType::Int64, true),
+                Field::new("age", DataType::Float64, true),
+                Field::new("gender_male", DataType::Float64, false),
+                Field::new("num_diagnoses", DataType::Float64, false),
+                Field::new("num_active_meds", DataType::Float64, false),
+                Field::new("has_infection", DataType::Float64, false),
+                Field::new("has_pain", DataType::Float64, false),
+                Field::new("has_hypertension", DataType::Float64, false),
+                Field::new("has_diabetes", DataType::Float64, false),
+                Field::new("has_copd", DataType::Float64, false),
+                Field::new("renal_impairment", DataType::Float64, false),
+            ];
 
-        // Add label fields for each drug class
-        for i in 0..num_classes {
-            fields.push(Field::new(
-                format!("drug_class_{i}"),
-                DataType::Float64,
-                false,
-            ));
-        }
+            // Add label fields for each drug class
+            for i in 0..num_classes {
+                fields.push(Field::new(
+                    format!("drug_class_{i}"),
+                    DataType::Float64,
+                    false,
+                ));
+            }
+            #[cfg(feature = "longevity")]
+            append_longevity_schema_fields(&mut fields);
+            fields
+        };
 
         let schema = Schema::new(fields);
 
@@ -1262,11 +1289,34 @@ pub fn split_by_patient(
     Ok((train, val, test))
 }
 
+/// Append longevity-specific schema fields to an existing schema.
+///
+/// Adds nullable columns for biological age delta, calibration status,
+/// SASP composite score, functional trajectory, and p16 expression.
+#[cfg(feature = "longevity")]
+pub fn append_longevity_schema_fields(fields: &mut Vec<Field>) {
+    fields.push(Field::new("biological_age_delta", DataType::Float32, true));
+    fields.push(Field::new("calibration_status", DataType::Utf8, true));
+    fields.push(Field::new("sasp_composite_score", DataType::Float32, true));
+    fields.push(Field::new(
+        "post_icu_functional_trajectory",
+        DataType::Utf8,
+        true,
+    ));
+    fields.push(Field::new(
+        "p16_relative_expression",
+        DataType::Float32,
+        true,
+    ));
+}
+
 /// Convert task outputs to Arrow `RecordBatch`.
 ///
 /// # Errors
 /// Returns an error if the batch creation fails or schema is invalid.
 pub fn outputs_to_batch(outputs: &[TaskOutput], schema: &Schema) -> Result<RecordBatch> {
+    #[cfg(feature = "longevity")]
+    use arrow::array::{Float32Array, StringArray};
     use arrow::array::{Float64Array, Int64Array};
 
     // Build arrays in schema order
@@ -1291,6 +1341,27 @@ pub fn outputs_to_batch(outputs: &[TaskOutput], schema: &Schema) -> Result<Recor
             ("label", DataType::Float64) => {
                 let labels: Vec<f64> = outputs.iter().map(|o| o.label).collect();
                 arrays.push(std::sync::Arc::new(Float64Array::from(labels)));
+            }
+            // Longevity fields — Float32 (nullable)
+            #[cfg(feature = "longevity")]
+            (
+                "biological_age_delta" | "sasp_composite_score" | "p16_relative_expression",
+                DataType::Float32,
+            ) => {
+                let values: Vec<Option<f32>> = outputs
+                    .iter()
+                    .map(|o| o.features.get(field_name).map(|&v| v as f32))
+                    .collect();
+                arrays.push(std::sync::Arc::new(Float32Array::from(values)));
+            }
+            // Longevity fields — Utf8 (nullable)
+            #[cfg(feature = "longevity")]
+            ("calibration_status" | "post_icu_functional_trajectory", DataType::Utf8) => {
+                let values: Vec<Option<&str>> = outputs
+                    .iter()
+                    .map(|o| o.metadata.get(field_name).map(String::as_str))
+                    .collect();
+                arrays.push(std::sync::Arc::new(StringArray::from(values)));
             }
             (_, DataType::Float64) => {
                 // Feature field - get from output.features or default to 0.0

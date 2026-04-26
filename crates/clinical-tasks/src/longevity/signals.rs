@@ -2,6 +2,7 @@
 
 use crate::longevity::clock::BiologicalAgeDelta;
 use crate::longevity::senescence::{FunctionalTrajectory, SaspComposite};
+use std::collections::HashMap;
 
 /// Longevity signals collected during and after critical illness.
 ///
@@ -108,5 +109,48 @@ impl LongevitySignals {
         .iter()
         .filter(|&&p| p)
         .count()
+    }
+
+    /// Extract Arrow-compatible feature and metadata maps for batch conversion.
+    ///
+    /// Populates `features` with Float32-compatible numeric values and `metadata`
+    /// with Utf8-compatible string values for the longevity schema extension.
+    pub fn to_arrow_maps(
+        &self,
+        features: &mut HashMap<String, f64>,
+        metadata: &mut HashMap<String, String>,
+    ) {
+        // Float32 fields → features map (stored as f64; cast to f32 at batch creation time).
+        // PRECISION NOTE: f64→f32 narrowing is intentional — Arrow column type is Float32.
+        // Biological age delta values are < 50 years in magnitude; f32 precision is sufficient.
+        if let Some(ref delta) = self.biological_age_delta {
+            let _ = features.insert("biological_age_delta".to_string(), f64::from(delta.value));
+            // calibration_status is always derived from biological_age_delta; it will be null
+            // in the Arrow column whenever biological_age_delta is absent.
+            let _ = metadata.insert(
+                "calibration_status".to_string(),
+                delta.calibration_status.description(),
+            );
+        }
+
+        if let Some(ref sasp) = self.sasp_composite {
+            // PRECISION NOTE: sasp.score is f64; stored as f64 here and cast to f32 at batch
+            // creation time. SASP scores are bounded [0, 1]; f32 precision is sufficient.
+            let _ = features.insert("sasp_composite_score".to_string(), sasp.score);
+        }
+
+        if let Some(ref p16) = self.p16_relative_expression {
+            let _ = features.insert("p16_relative_expression".to_string(), f64::from(*p16));
+        }
+
+        // Utf8 fields → metadata map.
+        // Use variant_name() for a stable categorical label, not Debug output which would
+        // embed all numeric struct fields into the string column.
+        if let Some(ref trajectory) = self.post_icu_functional_trajectory {
+            let _ = metadata.insert(
+                "post_icu_functional_trajectory".to_string(),
+                trajectory.variant_name().to_string(),
+            );
+        }
     }
 }
