@@ -8,7 +8,7 @@
 #[cfg(feature = "longevity")]
 pub struct SaspComposite {
     /// The composite score value (typically 0.0 to 1.0, higher = more senescent)
-    pub score: f64,
+    pub score: f32,
 
     /// Number of individual markers included in the composite
     pub num_markers: usize,
@@ -24,7 +24,7 @@ pub struct SaspComposite {
 impl SaspComposite {
     /// Create a new SASP composite with the given score and marker count.
     #[must_use]
-    pub fn new(score: f64, num_markers: usize) -> Self {
+    pub fn new(score: f32, num_markers: usize) -> Self {
         Self {
             score,
             num_markers,
@@ -108,7 +108,7 @@ impl SaspComposite {
         }
 
         // Rescale by total weight present so partial composites remain on comparable scale
-        let score = weighted_sum / weight_total;
+        let score = (weighted_sum / weight_total) as f32;
 
         Some(Self {
             score,

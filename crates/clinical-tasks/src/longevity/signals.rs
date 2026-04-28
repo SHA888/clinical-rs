@@ -134,9 +134,9 @@ impl LongevitySignals {
         }
 
         if let Some(ref sasp) = self.sasp_composite {
-            // PRECISION NOTE: sasp.score is f64; stored as f64 here and cast to f32 at batch
-            // creation time. SASP scores are bounded [0, 1]; f32 precision is sufficient.
-            let _ = features.insert("sasp_composite_score".to_string(), sasp.score);
+            // PRECISION NOTE: sasp.score is f32; stored as f64 here and cast back to f32 at
+            // batch creation time. SASP scores are bounded [0, 1]; f32 precision is sufficient.
+            let _ = features.insert("sasp_composite_score".to_string(), f64::from(sasp.score));
         }
 
         if let Some(ref p16) = self.p16_relative_expression {

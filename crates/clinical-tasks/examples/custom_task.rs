@@ -232,6 +232,8 @@ impl TaskDefinition for IcuAdmissionPrediction {
                 label,
                 binary_label: true,
                 metadata,
+                #[cfg(feature = "longevity")]
+                longevity: None,
             })
         } else {
             Err(TaskError::Validation(

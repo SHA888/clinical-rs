@@ -174,6 +174,9 @@ pub struct TaskOutput {
     pub binary_label: bool,
     /// Additional metadata
     pub metadata: HashMap<String, String>,
+    /// Longevity signals (optional)
+    #[cfg(feature = "longevity")]
+    pub longevity: Option<crate::longevity::LongevitySignals>,
 }
 
 /// Result type for task operations.

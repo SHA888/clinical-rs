@@ -176,6 +176,8 @@ impl TaskDefinition for MortalityPrediction {
                 label,
                 binary_label: true,
                 metadata,
+                #[cfg(feature = "longevity")]
+                longevity: None,
             })
         } else {
             Err(TaskError::Validation(
@@ -423,6 +425,8 @@ impl TaskDefinition for ReadmissionPrediction {
                 label,
                 binary_label: true,
                 metadata,
+                #[cfg(feature = "longevity")]
+                longevity: None,
             })
         } else {
             Err(TaskError::Validation(
@@ -714,6 +718,8 @@ impl TaskDefinition for LengthOfStayPrediction {
                 label,
                 binary_label: matches!(self.target, LosTarget::Buckets),
                 metadata,
+                #[cfg(feature = "longevity")]
+                longevity: None,
             })
         } else {
             Err(TaskError::Validation(
@@ -1222,6 +1228,8 @@ impl TaskDefinition for DrugRecommendation {
                 label: label_sum,
                 binary_label: false, // Multi-label, not binary
                 metadata,
+                #[cfg(feature = "longevity")]
+                longevity: None,
             })
         } else {
             Err(TaskError::Validation(
@@ -1350,18 +1358,59 @@ pub fn outputs_to_batch(outputs: &[TaskOutput], schema: &Schema) -> Result<Recor
             ) => {
                 let values: Vec<Option<f32>> = outputs
                     .iter()
-                    .map(|o| o.features.get(field_name).map(|&v| v as f32))
+                    .map(|o| {
+                        if let Some(ref signals) = o.longevity {
+                            match field_name.as_str() {
+                                "biological_age_delta" => {
+                                    if let Some(ref d) = signals.biological_age_delta {
+                                        return Some(d.value);
+                                    }
+                                }
+                                "sasp_composite_score" => {
+                                    if let Some(ref s) = signals.sasp_composite {
+                                        return Some(s.score);
+                                    }
+                                }
+                                "p16_relative_expression" => {
+                                    if let Some(v) = signals.p16_relative_expression {
+                                        return Some(v);
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        o.features.get(field_name).map(|&v| v as f32)
+                    })
                     .collect();
                 arrays.push(std::sync::Arc::new(Float32Array::from(values)));
             }
             // Longevity fields — Utf8 (nullable)
             #[cfg(feature = "longevity")]
             ("calibration_status" | "post_icu_functional_trajectory", DataType::Utf8) => {
-                let values: Vec<Option<&str>> = outputs
+                let values: Vec<Option<String>> = outputs
                     .iter()
-                    .map(|o| o.metadata.get(field_name).map(String::as_str))
+                    .map(|o| {
+                        if let Some(ref signals) = o.longevity {
+                            match field_name.as_str() {
+                                "calibration_status" => {
+                                    if let Some(ref d) = signals.biological_age_delta {
+                                        return Some(d.calibration_status.description());
+                                    }
+                                }
+                                "post_icu_functional_trajectory" => {
+                                    if let Some(ref t) = signals.post_icu_functional_trajectory {
+                                        return Some(t.variant_name().to_string());
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        o.metadata.get(field_name).cloned()
+                    })
                     .collect();
-                arrays.push(std::sync::Arc::new(StringArray::from(values)));
+                // Convert Vec<Option<String>> to Vec<Option<&str>> for StringArray
+                let str_values: Vec<Option<&str>> = values.iter().map(|s| s.as_deref()).collect();
+                arrays.push(std::sync::Arc::new(StringArray::from(str_values)));
             }
             (_, DataType::Float64) => {
                 // Feature field - get from output.features or default to 0.0
