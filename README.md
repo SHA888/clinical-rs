@@ -20,9 +20,9 @@
 
 | Crate | Purpose | Status |
 |-------|---------|--------|
-| [`medcodes`](crates/medcodes) | Medical code ontologies, hierarchy traversal, and cross-system mapping (ICD-10, ATC, LOINC, SNOMED CT, etc.) | 🚧 Pre-release |
-| [`mimic-etl`](crates/mimic-etl) | MIMIC-III/IV CSV parser → Apache Arrow RecordBatches with memory-mapped I/O and parallel processing | 🚧 Pre-release |
-| [`clinical-tasks`](crates/clinical-tasks) | Task windowing engine — transforms clinical event streams into ML-ready (features, label) Arrow tables; includes post-critical-illness longevity signal module (feature-gated: `longevity`) | 🚧 Pre-release |
+| [`medcodes`](crates/medcodes) (v0.2.0) | Medical code ontologies, hierarchy traversal, and cross-system mapping (ICD-10, ATC, LOINC, SNOMED CT, etc.) | ✅ Published |
+| [`mimic-etl`](crates/mimic-etl) (v0.1.0) | MIMIC-III/IV CSV parser → Apache Arrow RecordBatches with memory-mapped I/O and parallel processing | ✅ Published |
+| [`clinical-tasks`](crates/clinical-tasks) (v0.1.0) | Task windowing engine — transforms clinical event streams into ML-ready (features, label) Arrow tables; includes post-critical-illness longevity signal module (feature-gated: `longevity`) | ✅ Published |
 
 Each crate publishes independently to [crates.io](https://crates.io) and can be used standalone. Together, they form an end-to-end pipeline from raw clinical data to model-ready datasets.
 
