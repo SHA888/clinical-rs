@@ -33,6 +33,7 @@ proptest = { workspace = true }
 insta = "1.40"
 
 [features]
+loinc = []
 default = ["icd10cm"]
 icd10cm = []
 icd9cm = []

@@ -45,6 +45,7 @@ Everything needed before writing the first line of library code. This phase prod
 ### 0.0.2 — Workspace Manifest
 
 - [x] **Root `Cargo.toml`**
+
   ```toml
   [workspace]
   resolver = "2"
@@ -82,6 +83,7 @@ Everything needed before writing the first line of library code. This phase prod
   tempfile = "3"
   insta = "1"          # snapshot testing
   ```
+
 - [x] Verify: `cargo check --workspace` passes with empty `lib.rs` stubs
 - [x] Verify: `cargo fmt --all -- --check` passes
 - [x] Verify: `cargo clippy --workspace -- -D warnings` passes
@@ -91,6 +93,7 @@ Everything needed before writing the first line of library code. This phase prod
 Each crate gets a publishable-but-empty skeleton.
 
 - [x] **`crates/medcodes/Cargo.toml`**
+
   ```toml
   [package]
   name = "medcodes"
@@ -123,10 +126,13 @@ Each crate gets a publishable-but-empty skeleton.
   name = "lookup"
   harness = false
   ```
+
   - [x] `crates/medcodes/src/lib.rs` — module stubs, `#![doc]` header, public re-exports
   - [x] `crates/medcodes/README.md` — crate-level README (rendered on crates.io)
   - [x] `crates/medcodes/CHANGELOG.md` — initialized with `## [Unreleased]`
+
 - [x] **`crates/mimic-etl/Cargo.toml`**
+
   ```toml
   [package]
   name = "mimic-etl"
@@ -164,10 +170,13 @@ Each crate gets a publishable-but-empty skeleton.
   name = "parse"
   harness = false
   ```
+
   - [x] `crates/mimic-etl/src/lib.rs` — module stubs
   - [x] `crates/mimic-etl/README.md`
   - [x] `crates/mimic-etl/CHANGELOG.md`
+
 - [x] **`crates/clinical-tasks/Cargo.toml`**
+
   ```toml
   [package]
   name = "clinical-tasks"
@@ -201,9 +210,11 @@ Each crate gets a publishable-but-empty skeleton.
   name = "windowing"
   harness = false
   ```
+
   - [x] `crates/clinical-tasks/src/lib.rs` — module stubs
   - [x] `crates/clinical-tasks/README.md`
   - [x] `crates/clinical-tasks/CHANGELOG.md`
+
 - [x] **Final check:** `cargo check --workspace` compiles all three empty crates
 
 ### 0.0.4 — Code Quality Configuration
@@ -216,6 +227,7 @@ Each crate gets a publishable-but-empty skeleton.
   use_try_shorthand = true
   ```
 - [x] **Workspace-level clippy lints** (in root `Cargo.toml`)
+
   ```toml
   [workspace.lints.rust]
   unsafe_code = "forbid"
@@ -230,8 +242,11 @@ Each crate gets a publishable-but-empty skeleton.
   expect_used = "warn"
   panic = "warn"
   ```
+
   Each crate inherits via `[lints] workspace = true` in its `Cargo.toml`.
+
 - [x] **`deny.toml`** (cargo-deny config)
+
   ```toml
   [advisories]
   vulnerability = "deny"
@@ -251,6 +266,7 @@ Each crate gets a publishable-but-empty skeleton.
   unknown-git = "deny"
   allow-registry = ["https://github.com/rust-lang/crates.io-index"]
   ```
+
 - [x] **Verify:** `cargo deny check` passes on empty workspace
 
 ### 0.0.5 — CI / CD Pipeline (GitHub Actions)
@@ -400,14 +416,158 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
 
 ### v0.3.0 — Clinical Terminologies
 
-- [ ] **LOINC** — code lookup + hierarchy, feature flag: `loinc`
-- [ ] **SNOMED CT** (US edition) — IS-A hierarchy, feature flag: `snomed`
-  - [ ] Note: requires NLM UMLS license acknowledgment in docs
-- [ ] **RxNorm** — concept lookup + RxNorm→ATC mapping, feature flag: `rxnorm`
-- [ ] **CPT** — Category I codes, feature flag: `cpt`
-  - [ ] Note: AMA-licensed — evaluate embedding feasibility
-- [ ] **ICD-10-PCS** — 7-character structure parsing, feature flag: `icd10pcs`
-- [ ] **Multi-version support** — build-time code table version selection
+#### LOINC — Laboratory observation codes
+
+- [x] Feature flag: `loinc` in `Cargo.toml`
+- [x] Module scaffold: `src/loinc.rs`
+- [x] `LoincComponents` struct for 6-axis metadata
+- [x] Placeholder `CodeSystem` trait implementation
+- [ ] Build script: `generate_loinc_data()` in `build.rs`
+  - [ ] Parse official LOINC CSV (component, property, timing, system, scale, method)
+  - [ ] Generate `phf::Map` for descriptions
+  - [ ] Generate `phf::Map` for component details
+  - [ ] Handle LOINC hierarchy (if applicable — multi-axial classification)
+- [ ] Tests: `tests/loinc_tests.rs`
+  - [x] Basic lookup success/failure
+  - [x] Component extraction
+  - [ ] Known-answer tests (creatinine 2160-0, troponin, glucose, etc.)
+  - [ ] Normalization (hyphen handling, case sensitivity)
+- [x] Benchmark: `benches/loinc_bench.rs`
+- [ ] Documentation
+  - [ ] Module-level docs with LOINC axis explanation
+  - [ ] Data source + version in README
+  - [ ] Example: lab test lookup
+- [ ] License/attribution: LOINC terms-of-use acknowledgment in docs
+
+#### SNOMED CT (US Edition) — Clinical terminology with IS-A hierarchy
+
+- [ ] Feature flag: `snomed` in `Cargo.toml`
+- [ ] Module scaffold: `src/snomed.rs`
+- [ ] `SnomedCt` struct with polyhierarchy support
+- [ ] Build script: `generate_snomed_data()` in `build.rs`
+  - [ ] Parse RF2 format (`sct2_Concept_*.txt`, `sct2_Relationship_*.txt`)
+  - [ ] Compute transitive closure for IS-A relationships
+  - [ ] Generate `phf::Map` for descriptions
+  - [ ] Generate `phf::Map` for parents (multiple allowed)
+  - [ ] Generate `phf::Map` for typed relationships (finding_site, causative_agent, etc.)
+  - [ ] Optimize for build time (<90s target for 350K concepts)
+- [ ] Extend `CodeSystem` trait
+  - [ ] Add `parents() -> Vec<Code>` (plural for polyhierarchy)
+  - [ ] Add `relationships(code, rel_type) -> Vec<Code>`
+  - [ ] Update all existing implementations (ICD-10, ICD-9, ATC, etc.)
+- [ ] Tests: `tests/snomed_tests.rs`
+  - [ ] Lookup: diabetes (73211009), hypertension, viral pneumonia
+  - [ ] Polyhierarchy: viral pneumonia has multiple parents
+  - [ ] IS-A transitive closure: diabetes IS-A clinical finding
+  - [ ] Typed relationships: pneumonia finding_site → lung
+- [ ] Benchmark: `benches/snomed_bench.rs` (transitive closure performance)
+- [ ] Documentation
+  - [ ] UMLS license requirement + registration link
+  - [ ] Data placement: `data/snomed/` directory structure
+  - [ ] Polyhierarchy explanation
+  - [ ] Example: semantic reasoning (is-a checks)
+- [ ] UMLS license acknowledgment: README + module docs
+
+#### RxNorm — Medication terminology + RxNorm→ATC mapping
+
+- [ ] Feature flag: `rxnorm` in `Cargo.toml`
+- [ ] Feature flag: `rxnorm-full` for complete 3.2M dataset (optional)
+- [ ] Module scaffold: `src/rxnorm.rs`
+- [ ] `RxNorm` struct with relationship graph
+- [ ] `RxNormTermType` enum (Ingredient, BrandName, ClinicalDrug, etc.)
+- [ ] Build script: `generate_rxnorm_data()` in `build.rs`
+  - [ ] Parse RxNorm RRF files
+  - [ ] Prune to ingredients + clinical drugs (~10K subset by default)
+  - [ ] Generate `phf::Map` for descriptions
+  - [ ] Generate `phf::Map` for typed relationships (has_ingredient, has_tradename, etc.)
+  - [ ] Generate RxNorm→ATC cross-mapping
+- [ ] Tests: `tests/rxnorm_tests.rs`
+  - [ ] Lookup: metformin (6809), aspirin, lisinopril
+  - [ ] Relationships: metformin has_tradename → Glucophage
+  - [ ] RxNorm→ATC: metformin → A10BA02
+  - [ ] Term type classification
+- [ ] Benchmark: `benches/rxnorm_bench.rs`
+- [ ] Documentation
+  - [ ] Relationship types explanation
+  - [ ] Subset vs full dataset trade-offs
+  - [ ] Example: ingredient lookup + brand name expansion
+- [ ] Update existing `NdcToRxNorm` cross-mapper to use new module
+
+#### CPT — Current Procedural Terminology (Category I codes)
+
+- [ ] Feature flag: `cpt` in `Cargo.toml`
+- [ ] Module scaffold: `src/cpt.rs`
+- [ ] `Cpt` struct (flat structure, categories are editorial)
+- [ ] **License evaluation**
+  - [ ] Research: Can we embed UMLS free subset (~10K codes)?
+  - [ ] Document: AMA full license requirements ($500-1000/year)
+  - [ ] Decide: embed free subset only, or support user-provided full set
+- [ ] Build script: `generate_cpt_data()` in `build.rs`
+  - [ ] Parse UMLS CPT subset
+  - [ ] Detect user-provided full CPT file in `data/cpt/` (optional)
+  - [ ] Generate `phf::Map` for descriptions
+  - [ ] Generate `phf::Map` for editorial categories
+- [ ] Tests: `tests/cpt_tests.rs`
+  - [ ] Lookup: 99213 (office visit), 99281 (ED visit), 99201-99205
+  - [ ] Validation: Category I code format (5 digits)
+  - [ ] Known-answer: E&M codes, surgical codes
+- [ ] Benchmark: `benches/cpt_bench.rs`
+- [ ] Documentation
+  - [ ] AMA license notice (free subset vs full)
+  - [ ] Full CPT upgrade path for licensed users
+  - [ ] Example: procedure code validation
+- [ ] README: prominently document licensing restrictions
+
+#### ICD-10-PCS — Inpatient procedure coding (7-character positional)
+
+- [ ] Feature flag: `icd10pcs` in `Cargo.toml`
+- [ ] Module scaffold: `src/icd10pcs.rs`
+- [ ] `Icd10Pcs` struct with positional structure support
+- [ ] Build script: `generate_icd10pcs_data()` in `build.rs`
+  - [ ] Parse CMS ICD-10-PCS XML/CSV
+  - [ ] Generate `phf::Map` for descriptions
+  - [ ] Store positional metadata (Section, Body System, Root Operation, etc.)
+- [ ] Positional query methods
+  - [ ] `character_at(code, position) -> Option<char>`
+  - [ ] `find_by_pattern(pattern) -> Vec<Code>` (e.g., "0?T??ZZ" for tendon ops)
+  - [ ] `section(code) -> Section` (extract 1st character)
+  - [ ] `body_system(code) -> BodySystem` (extract 2nd character)
+- [ ] Tests: `tests/icd10pcs_tests.rs`
+  - [ ] Lookup: valid 7-character codes
+  - [ ] Pattern matching: "0??T?ZZ" returns tendon procedures
+  - [ ] Positional extraction: character_at(code, 3) == root operation
+  - [ ] Validation: exactly 7 alphanumeric characters
+- [ ] Benchmark: `benches/icd10pcs_bench.rs` (pattern matching performance)
+- [ ] Documentation
+  - [ ] 7-character structure explanation (diagram)
+  - [ ] Section/Body System/Root Operation tables
+  - [ ] Example: pattern-based procedure search
+- [ ] Note: Non-hierarchical (positional, not tree-based)
+
+#### Multi-version support — Build-time code table version selection
+
+- [ ] Design: version metadata in each `CodeSystem` implementation
+- [ ] Build script infrastructure
+  - [ ] Environment variable: `MEDCODES_ICD10_VERSION=2026` (build-time)
+  - [ ] Fallback to latest embedded version if not specified
+  - [ ] Version string embedded in generated code (e.g., `pub const VERSION: &str = "2026"`)
+- [ ] Per-terminology version tracking
+  - [ ] ICD-10-CM: annual (October 1)
+  - [ ] LOINC: biannual (June, December)
+  - [ ] SNOMED CT: biannual (March, September)
+  - [ ] RxNorm: monthly
+  - [ ] CPT: annual (January)
+  - [ ] ICD-10-PCS: annual (October 1)
+- [ ] Documentation
+  - [ ] README section: "Code Table Versions"
+  - [ ] Table: crate version → terminology versions included
+  - [ ] Build-time override instructions
+  - [ ] Update frequency policy
+- [ ] Metadata API
+  - [ ] `Icd10Cm::version() -> &'static str`
+  - [ ] `Loinc::release_date() -> &'static str`
+  - [ ] Add to all `CodeSystem` implementations
+- [ ] Tests: version metadata retrieval
 
 ### v1.0.0 — Stable API
 
@@ -583,7 +743,7 @@ Minimal task windowing engine with one fully implemented task.
     - [x] Returns `None` if fewer than 2 of 4 components are present
   - [x] **`FunctionalTrajectory`** (`senescence.rs`)
     - [x] Variants: `Pics`, `Recovering`, `Recovered`
-    - [x] Rustdoc: cite Mira et al. 2017 (*Front Immunol*) PICS criteria
+    - [x] Rustdoc: cite Mira et al. 2017 (_Front Immunol_) PICS criteria
   - [x] **`BiologicalAgeDelta`** (`clock.rs`)
     - [x] Fields: `value: f32`, `clock_version: ClockVersion`, `calibration_status: CalibrationStatus`
     - [x] `ClockVersion` enum: `Horvath2013`, `PhenoAge`, `GrimAge2`
@@ -636,16 +796,16 @@ Minimal task windowing engine with one fully implemented task.
 
 Tracked for roadmap visibility. Will not block any 1.0 release.
 
-| Crate | Purpose | Depends on |
-|-------|---------|------------|
-| [`eicu-etl`](#eicu-etl) | eICU → Arrow ClinicalEvent schema | `medcodes` (optional) |
-| [`omop-etl`](#omop-etl) | OMOP-CDM v5.4 → Arrow | `medcodes` (optional) |
-| [`fhir-etl`](#fhir-etl) | FHIR R4 JSON/NDJSON → Arrow | `medcodes` (optional) |
-| `clinical-signals` | EDF/EDF+, WFDB biosignal I/O + epoch windowing | — |
-| `clinical-metrics` | AUROC, PR-AUC, NRI, DCA, Brier, C-statistic | — |
-| `clinical-calib` | Conformal prediction for model calibration | `clinical-metrics` |
-| `clinical-inference` | ONNX Runtime wrapper for Arrow batch inference | — |
-| `longevity-rs` | Standalone biological age clock algorithms + bench data schema; extracted from `clinical-tasks::longevity` when SEA clock recalibration or bench data schema creates a distinct dependency surface | `clinical-tasks` |
+| Crate                   | Purpose                                                                                                                                                                                            | Depends on            |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| [`eicu-etl`](#eicu-etl) | eICU → Arrow ClinicalEvent schema                                                                                                                                                                  | `medcodes` (optional) |
+| [`omop-etl`](#omop-etl) | OMOP-CDM v5.4 → Arrow                                                                                                                                                                              | `medcodes` (optional) |
+| [`fhir-etl`](#fhir-etl) | FHIR R4 JSON/NDJSON → Arrow                                                                                                                                                                        | `medcodes` (optional) |
+| `clinical-signals`      | EDF/EDF+, WFDB biosignal I/O + epoch windowing                                                                                                                                                     | —                     |
+| `clinical-metrics`      | AUROC, PR-AUC, NRI, DCA, Brier, C-statistic                                                                                                                                                        | —                     |
+| `clinical-calib`        | Conformal prediction for model calibration                                                                                                                                                         | `clinical-metrics`    |
+| `clinical-inference`    | ONNX Runtime wrapper for Arrow batch inference                                                                                                                                                     | —                     |
+| `longevity-rs`          | Standalone biological age clock algorithms + bench data schema; extracted from `clinical-tasks::longevity` when SEA clock recalibration or bench data schema creates a distinct dependency surface | `clinical-tasks`      |
 
 ---
 
@@ -697,7 +857,7 @@ join key, explicit vasopressor and ventilator tables, APACHE IVa severity scorin
   - [ ] `Error` type
 - [ ] **Core table parsers**
   - [ ] `patient.csv` → Arrow (patientunitstayid, age, gender, ethnicity, unittype,
-    unitstaytype, admissionheight, admissionweight, unitdischargestatus, LOS)
+        unitstaytype, admissionheight, admissionweight, unitdischargestatus, LOS)
   - [ ] `diagnosis.csv` → Arrow (ICD-9 codes, active problems, diagnosisoffset)
   - [ ] `lab.csv` → Arrow (labname, labresult, labresultoffset, labresulttypeindex)
   - [ ] `vitalperiodic.csv` → Arrow (time-series: HR, SBP, DBP, MAP, SpO2, RR, temp)

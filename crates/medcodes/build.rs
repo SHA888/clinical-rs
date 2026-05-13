@@ -41,6 +41,8 @@ fn generate_all_data() {
     generate_ndc_data();
     generate_ndc_to_atc_data();
     generate_ndc_to_rxnorm_data();
+    // LOINC generation must run after other data to keep ordering consistent
+    generate_loinc_data();
 }
 
 fn generate_icd10cm_data() {
@@ -94,6 +96,11 @@ fn generate_ccsr_data() {
     }
 }
 
+#[cfg(not(feature = "loinc"))]
+const fn generate_loinc_data() {
+    // no-op when loinc feature is disabled
+}
+
 fn generate_ccs_data() {
     // Generate CCS mapping data
     let icd10cm_ccs_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/ccs/icd10cm_mappings.csv");
@@ -137,6 +144,39 @@ fn generate_ccs_data() {
         eprintln!("Using empty CCS mappings.");
         generate_empty_ccs_maps();
     }
+}
+
+// LOINC data generation
+#[cfg(feature = "loinc")]
+fn generate_loinc_data() {
+    use std::fs::File;
+    use std::io::{BufRead, BufReader};
+    use std::path::Path;
+
+    let csv_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/loinc/loinc.csv");
+    if !Path::new(csv_path).exists() {
+        eprintln!("Warning: LOINC data file not found at {csv_path}. Skipping LOINC generation.");
+        return;
+    }
+
+    let file = File::open(csv_path).expect("Failed to open LOINC CSV");
+    let reader = BufReader::new(file);
+
+    for (idx, line) in reader.lines().enumerate() {
+        let line = line.expect("Failed to read line");
+        if idx == 0 {
+            continue;
+        }
+        let fields: Vec<&str> = line.split(',').collect();
+        if fields.len() < 8 {
+            continue;
+        }
+        let code = fields[0].trim();
+        eprintln!("[LOINC] Skipping phf generation for code {code} – placeholder implementation.");
+    }
+    eprintln!(
+        "[LOINC] Generation complete (placeholder). Implement full phf map generation as needed."
+    );
 }
 
 fn generate_icd9cm_data() {

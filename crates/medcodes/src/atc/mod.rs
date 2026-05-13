@@ -19,7 +19,7 @@
 //! # DDD (Defined Daily Dose)
 //!
 //! DDD is the assumed average maintenance dose per day for a drug used for its main indication
-//! in adults. DDD values are optional metadata associated with ATC codes.
+//! DDD values are optional metadata associated with ATC codes.
 
 use crate::{Code, CodeSystem, MedCodeError, System};
 use phf::phf_map;

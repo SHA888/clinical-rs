@@ -7,7 +7,7 @@
 
 use clap::{Parser, Subcommand};
 use mimic_etl::{DatasetConfig, MimicCsvReader, MimicVersion};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(name = "mimic-etl", about = "MIMIC clinical database ETL tool")]
@@ -41,7 +41,7 @@ enum Commands {
         tables: String,
     },
 
-    /// Print the ClinicalEvent Arrow schema
+    /// Print the `ClinicalEvent` Arrow schema
     Schema,
 
     /// Show info about MIMIC CSV files in a directory
@@ -68,7 +68,7 @@ fn main() {
     }
 }
 
-fn cmd_convert(input: &PathBuf, output: &PathBuf, format: &str, version: u8, tables: &str) {
+fn cmd_convert(input: &Path, output: &Path, format: &str, version: u8, tables: &str) {
     let mimic_version = match version {
         3 => MimicVersion::MimicIII,
         4 => MimicVersion::MimicIV,
@@ -140,7 +140,9 @@ fn cmd_convert(input: &PathBuf, output: &PathBuf, format: &str, version: u8, tab
 
                 match result {
                     Ok(()) => {
-                        let total_rows: usize = batches.iter().map(|b| b.num_rows()).sum();
+                        let total_rows: usize = batches
+                            .iter()
+                            .fold(0_usize, |acc, batch| acc + batch.num_rows());
                         println!(" {total_rows} rows → {}", out_path.display());
                     }
                     Err(e) => eprintln!(" write error: {e}"),
@@ -159,7 +161,7 @@ fn cmd_schema() {
     println!("{schema}");
 }
 
-fn cmd_info(input: &PathBuf) {
+fn cmd_info(input: &Path) {
     use std::io::{BufRead, BufReader};
 
     println!("MIMIC CSV files in {}:", input.display());
@@ -187,9 +189,11 @@ fn cmd_info(input: &PathBuf) {
                     let line_count = reader.lines().count();
                     let row_count = if line_count > 0 { line_count - 1 } else { 0 };
                     let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+                    let size_mb_tenths = size.saturating_mul(10) / 1_048_576;
                     println!(
-                        "  {name:<30} {row_count:>10} rows  ({:.1} MB)",
-                        size as f64 / 1_048_576.0
+                        "  {name:<30} {row_count:>10} rows  ({}.{} MB)",
+                        size_mb_tenths / 10,
+                        size_mb_tenths % 10
                     );
                 }
                 Err(e) => println!("  {name:<30} error: {e}"),
