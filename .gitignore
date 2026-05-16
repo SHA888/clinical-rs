@@ -3,8 +3,9 @@
 **/*.rs.bk
 Cargo.lock
 
-# Data files
+# Data files (root and per-crate vendor data)
 /data/
+crates/medcodes/data/loinc/
 *.parquet
 *.arrow
 *.ipc

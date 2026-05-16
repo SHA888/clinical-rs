@@ -15,6 +15,7 @@ pub mod ccs;
 pub mod ccsr;
 pub mod icd10;
 pub mod icd9;
+#[cfg(feature = "loinc")]
 pub mod loinc;
 pub mod ndc;
 pub mod ndc_to_atc;
@@ -26,6 +27,7 @@ pub use ccs::{CcsCategory, Icd9CmToCcs, Icd10CmToCcs};
 pub use ccsr::{CcsrCategory, CcsrContext, CcsrMapping, CcsrToIcd10Cm, Icd10CmToCcsr};
 pub use icd9::Icd9Cm;
 pub use icd10::Icd10Cm;
+#[cfg(feature = "loinc")]
 pub use loinc::Loinc;
 pub use ndc::Ndc;
 pub use ndc_to_atc::NdcToAtc;

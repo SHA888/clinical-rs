@@ -422,16 +422,16 @@ Core ontology engine with ICD-10-CM and the first cross-mapping. First crate pub
 - [x] Module scaffold: `src/loinc.rs`
 - [x] `LoincComponents` struct for 6-axis metadata
 - [x] Placeholder `CodeSystem` trait implementation
-- [ ] Build script: `generate_loinc_data()` in `build.rs`
-  - [ ] Parse official LOINC CSV (component, property, timing, system, scale, method)
-  - [ ] Generate `phf::Map` for descriptions
-  - [ ] Generate `phf::Map` for component details
-  - [ ] Handle LOINC hierarchy (if applicable — multi-axial classification)
-- [ ] Tests: `tests/loinc_tests.rs`
+- [x] Build script: `generate_loinc_data()` in `build.rs`
+  - [x] Parse official LOINC CSV (component, property, timing, system, scale, method)
+  - [x] Generate `phf::Map` for descriptions
+  - [x] Generate `phf::Map` for component details
+  - [x] Handle LOINC hierarchy (if applicable — multi-axial classification)
+- [x] Tests: `tests/loinc_tests.rs`
   - [x] Basic lookup success/failure
   - [x] Component extraction
-  - [ ] Known-answer tests (creatinine 2160-0, troponin, glucose, etc.)
-  - [ ] Normalization (hyphen handling, case sensitivity)
+  - [x] Known-answer tests (creatinine 2160-0, troponin, glucose, etc.)
+  - [x] Normalization (hyphen handling, case sensitivity)
 - [x] Benchmark: `benches/loinc_bench.rs`
 - [ ] Documentation
   - [ ] Module-level docs with LOINC axis explanation

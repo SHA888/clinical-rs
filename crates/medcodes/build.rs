@@ -29,6 +29,7 @@ fn setup_rerun_if_changed() {
         println!("cargo:rerun-if-changed=data/ccs/");
         println!("cargo:rerun-if-changed=data/atc/");
         println!("cargo:rerun-if-changed=data/ndc/");
+        println!("cargo:rerun-if-changed=data/loinc/LoincTable/Loinc.csv");
     }
 }
 
@@ -149,34 +150,261 @@ fn generate_ccs_data() {
 // LOINC data generation
 #[cfg(feature = "loinc")]
 fn generate_loinc_data() {
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
-    use std::path::Path;
-
-    let csv_path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/loinc/loinc.csv");
+    // Use the full official LOINC table from the Loinc_2.82 distribution.
+    // Column layout (full Loinc.csv, 40 columns):
+    //   0: LOINC_NUM  1: COMPONENT  2: PROPERTY  3: TIME_ASPCT  4: SYSTEM
+    //   5: SCALE_TYP  6: METHOD_TYP  25: LONG_COMMON_NAME
+    let csv_path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/data/loinc/LoincTable/Loinc.csv"
+    );
     if !Path::new(csv_path).exists() {
-        eprintln!("Warning: LOINC data file not found at {csv_path}. Skipping LOINC generation.");
+        eprintln!("Warning: LOINC data file not found at {csv_path}. Using empty LOINC maps.");
+        generate_empty_loinc_maps();
         return;
     }
 
-    let file = File::open(csv_path).expect("Failed to open LOINC CSV");
-    let reader = BufReader::new(file);
+    let mut reader = csv::Reader::from_path(csv_path).expect("Failed to read LOINC CSV");
 
-    for (idx, line) in reader.lines().enumerate() {
-        let line = line.expect("Failed to read line");
-        if idx == 0 {
+    let mut descriptions: HashMap<String, String> = HashMap::new();
+    let mut components: HashMap<String, (String, String, String, String, String, Option<String>)> =
+        HashMap::new();
+
+    for result in reader.records() {
+        let record = result.expect("Failed to parse CSV record");
+
+        let loinc_num = record.get(0).unwrap_or("").trim();
+        if loinc_num.is_empty() {
             continue;
         }
-        let fields: Vec<&str> = line.split(',').collect();
-        if fields.len() < 8 {
-            continue;
-        }
-        let code = fields[0].trim();
-        eprintln!("[LOINC] Skipping phf generation for code {code} – placeholder implementation.");
+
+        let component = record.get(1).unwrap_or("").trim();
+        let property = record.get(2).unwrap_or("").trim();
+        let timing = record.get(3).unwrap_or("").trim();
+        let system = record.get(4).unwrap_or("").trim();
+        let scale = record.get(5).unwrap_or("").trim();
+        let method = {
+            let m = record.get(6).unwrap_or("").trim();
+            if m.is_empty() {
+                None
+            } else {
+                Some(m.to_string())
+            }
+        };
+        let description = record.get(25).unwrap_or("").trim();
+
+        let loinc_num = loinc_num.to_string();
+        let _ = descriptions.insert(loinc_num.clone(), description.to_string());
+        let _ = components.insert(
+            loinc_num,
+            (
+                component.to_string(),
+                property.to_string(),
+                timing.to_string(),
+                system.to_string(),
+                scale.to_string(),
+                method,
+            ),
+        );
     }
+
+    eprintln!("Parsed {} LOINC codes", descriptions.len());
+    generate_loinc_maps(&descriptions, &components);
+}
+
+/// Write a u16-length-prefixed string to `writer`.
+fn write_loinc_str(writer: &mut impl std::io::Write, s: &str) {
+    let len = u16::try_from(s.len()).expect("LOINC field exceeds u16");
+    writer.write_all(&len.to_le_bytes()).expect("write failed");
+    writer.write_all(s.as_bytes()).expect("write failed");
+}
+
+/// Generate LOINC data by writing compact binary blobs + a tiny .rs shim.
+///
+/// Avoids generating hundreds of thousands of `map.insert()` lines that
+/// would OOM rustc when compiling the 109 K-entry LOINC table.
+#[allow(dead_code, clippy::too_many_lines)]
+fn generate_loinc_maps(
+    descriptions: &HashMap<String, String>,
+    components: &HashMap<String, (String, String, String, String, String, Option<String>)>,
+) {
+    use std::io::Write;
+
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR must be set");
+
+    // --- loinc_descriptions.bin ---
+    // format: [u32 count] then per entry: [u8 key_len][key][u16 val_len][val]
+    {
+        let path = std::path::Path::new(&out_dir).join("loinc_descriptions.bin");
+        let f = std::fs::File::create(&path).expect("create loinc_descriptions.bin");
+        let mut w = std::io::BufWriter::new(f);
+        w.write_all(
+            &u32::try_from(descriptions.len())
+                .expect("too many entries")
+                .to_le_bytes(),
+        )
+        .expect("write");
+        let mut entries: Vec<_> = descriptions.iter().collect();
+        entries.sort_by_key(|(k, _)| k.as_str());
+        for (key, val) in &entries {
+            w.write_all(&[u8::try_from(key.len()).expect("LOINC key too long")])
+                .expect("write");
+            w.write_all(key.as_bytes()).expect("write");
+            write_loinc_str(&mut w, val);
+        }
+        w.flush().expect("flush");
+    }
+
+    // --- loinc_components.bin ---
+    // format: [u32 count] then per entry:
+    //   [u8 key_len][key]
+    //   [u16 comp_len][comp] [u16 prop_len][prop] [u16 tim_len][tim]
+    //   [u16 sys_len][sys]   [u16 scl_len][scl]
+    //   [u8 has_method]  (if 1: [u16 meth_len][meth])
+    {
+        let path = std::path::Path::new(&out_dir).join("loinc_components.bin");
+        let f = std::fs::File::create(&path).expect("create loinc_components.bin");
+        let mut w = std::io::BufWriter::new(f);
+        w.write_all(
+            &u32::try_from(components.len())
+                .expect("too many entries")
+                .to_le_bytes(),
+        )
+        .expect("write");
+        let mut entries: Vec<_> = components.iter().collect();
+        entries.sort_by_key(|(k, _)| k.as_str());
+        for (key, (comp, prop, tim, sys, scl, meth)) in &entries {
+            w.write_all(&[u8::try_from(key.len()).expect("LOINC key too long")])
+                .expect("write");
+            w.write_all(key.as_bytes()).expect("write");
+            write_loinc_str(&mut w, comp);
+            write_loinc_str(&mut w, prop);
+            write_loinc_str(&mut w, tim);
+            write_loinc_str(&mut w, sys);
+            write_loinc_str(&mut w, scl);
+            match meth {
+                None => w.write_all(&[0u8]).expect("write"),
+                Some(m) => {
+                    w.write_all(&[1u8]).expect("write");
+                    write_loinc_str(&mut w, m);
+                }
+            }
+        }
+        w.flush().expect("flush");
+    }
+
+    // --- loinc_data.rs: tiny shim that embeds the blobs and parses at runtime ---
+    let out_path = std::path::Path::new(&out_dir).join("loinc_data.rs");
+    let rs_code = r#"// Generated by build.rs — do not edit.
+// Data lives in binary blobs; only the tiny parser below is compiled by rustc.
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
+
+static LOINC_DESCRIPTIONS_BIN: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/loinc_descriptions.bin"));
+static LOINC_COMPONENTS_BIN: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/loinc_components.bin"));
+
+fn loinc_parse_descriptions(data: &'static [u8]) -> HashMap<&'static str, &'static str> {
+    let mut pos = 0usize;
+    let count = u32::from_le_bytes(data[pos..pos + 4].try_into().unwrap()) as usize;
+    pos += 4;
+    let mut map = HashMap::with_capacity(count);
+    for _ in 0..count {
+        let kl = data[pos] as usize;
+        pos += 1;
+        let key = std::str::from_utf8(&data[pos..pos + kl]).unwrap();
+        pos += kl;
+        let vl = u16::from_le_bytes(data[pos..pos + 2].try_into().unwrap()) as usize;
+        pos += 2;
+        let val = std::str::from_utf8(&data[pos..pos + vl]).unwrap();
+        pos += vl;
+        let _ = map.insert(key, val);
+    }
+    map
+}
+
+fn loinc_read_str(data: &'static [u8], pos: &mut usize) -> &'static str {
+    let l = u16::from_le_bytes(data[*pos..*pos + 2].try_into().unwrap()) as usize;
+    *pos += 2;
+    let s = std::str::from_utf8(&data[*pos..*pos + l]).unwrap();
+    *pos += l;
+    s
+}
+
+fn loinc_parse_components(
+    data: &'static [u8],
+) -> HashMap<&'static str, crate::loinc::LoincComponents> {
+    let mut pos = 0usize;
+    let count = u32::from_le_bytes(data[pos..pos + 4].try_into().unwrap()) as usize;
+    pos += 4;
+    let mut map = HashMap::with_capacity(count);
+    for _ in 0..count {
+        let kl = data[pos] as usize;
+        pos += 1;
+        let key = std::str::from_utf8(&data[pos..pos + kl]).unwrap();
+        pos += kl;
+        let component = loinc_read_str(data, &mut pos);
+        let property  = loinc_read_str(data, &mut pos);
+        let timing    = loinc_read_str(data, &mut pos);
+        let system    = loinc_read_str(data, &mut pos);
+        let scale     = loinc_read_str(data, &mut pos);
+        let has_method = data[pos];
+        pos += 1;
+        let method = if has_method == 1 {
+            Some(loinc_read_str(data, &mut pos))
+        } else {
+            None
+        };
+        let _ = map.insert(key, crate::loinc::LoincComponents { component, property, timing, system, scale, method });
+    }
+    map
+}
+
+/// LOINC code descriptions keyed by LOINC_NUM.
+pub static LOINC_DESCRIPTIONS: Lazy<HashMap<&'static str, &'static str>> =
+    Lazy::new(|| loinc_parse_descriptions(LOINC_DESCRIPTIONS_BIN));
+
+/// LOINC component details (component/property/timing/system/scale/method) keyed by LOINC_NUM.
+pub static LOINC_COMPONENTS: Lazy<HashMap<&'static str, crate::loinc::LoincComponents>> =
+    Lazy::new(|| loinc_parse_components(LOINC_COMPONENTS_BIN));
+
+/// LOINC parent mapping — empty until ComponentHierarchyBySystem is loaded.
+pub static LOINC_PARENTS: Lazy<HashMap<&'static str, Option<&'static str>>> =
+    Lazy::new(HashMap::new);
+
+/// LOINC children mapping — empty until ComponentHierarchyBySystem is loaded.
+pub static LOINC_CHILDREN: Lazy<HashMap<&'static str, Vec<&'static str>>> =
+    Lazy::new(HashMap::new);
+"#;
+    std::fs::write(&out_path, rs_code).expect("Failed to write loinc_data.rs");
     eprintln!(
-        "[LOINC] Generation complete (placeholder). Implement full phf map generation as needed."
+        "Generated LOINC data at {} with {} codes",
+        out_path.display(),
+        descriptions.len()
     );
+}
+
+/// Generate empty LOINC maps when data is not available.
+#[cfg(feature = "loinc")]
+fn generate_empty_loinc_maps() {
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR must be set");
+    let out_path = std::path::Path::new(&out_dir).join("loinc_data.rs");
+
+    let empty_code = r"// Generated by build.rs - empty LOINC maps (data file not found)
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
+
+pub static LOINC_DESCRIPTIONS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(HashMap::new);
+pub static LOINC_COMPONENTS: Lazy<HashMap<&'static str, crate::loinc::LoincComponents>> = Lazy::new(HashMap::new);
+pub static LOINC_PARENTS: Lazy<HashMap<&'static str, Option<&'static str>>> = Lazy::new(HashMap::new);
+pub static LOINC_CHILDREN: Lazy<HashMap<&'static str, Vec<&'static str>>> = Lazy::new(HashMap::new);
+";
+
+    if let Err(e) = std::fs::write(&out_path, empty_code) {
+        panic!("Failed to write empty LOINC maps: {e}");
+    }
+    eprintln!("Generated empty LOINC maps at {}", out_path.display());
 }
 
 fn generate_icd9cm_data() {

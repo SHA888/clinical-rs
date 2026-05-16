@@ -5,7 +5,6 @@
 
 use crate::CodeSystem;
 use crate::types::{Code, MedCodeError, System};
-use phf::phf_map;
 
 /// Component details for a LOINC code.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -24,22 +23,8 @@ pub struct LoincComponents {
     pub method: Option<&'static str>,
 }
 
-// Placeholder maps – real generation will replace these.
-static DESCRIPTIONS: phf::Map<&'static str, &'static str> = phf_map! {
-    // Example entry – replace with generated data.
-    "2160-0" => "Creatinine [Mass/volume] in Serum or Plasma",
-};
-
-static COMPONENTS: phf::Map<&'static str, LoincComponents> = phf_map! {
-    "2160-0" => LoincComponents {
-        component: "Creatinine",
-        property: "Mass",
-        timing: "Pt",
-        system: "Ser/Plas",
-        scale: "Qn",
-        method: None,
-    },
-};
+// Include the generated data from build.rs
+include!(concat!(env!("OUT_DIR"), "/loinc_data.rs"));
 
 /// LOINC code system implementation.
 pub struct Loinc;
@@ -64,7 +49,7 @@ impl Loinc {
     /// Returns [`MedCodeError::NotFound`] when the code does not exist in the loaded map.
     pub fn components(&self, code: &str) -> Result<LoincComponents, MedCodeError> {
         let norm = self.normalize(code);
-        COMPONENTS
+        LOINC_COMPONENTS
             .get(norm.as_str())
             .cloned()
             .ok_or_else(|| MedCodeError::NotFound {
@@ -77,9 +62,9 @@ impl Loinc {
 impl CodeSystem for Loinc {
     fn lookup(&self, code: &str) -> Result<Code, MedCodeError> {
         let norm = self.normalize(code);
-        DESCRIPTIONS
+        LOINC_DESCRIPTIONS
             .get(norm.as_str())
-            .map(|desc| Code {
+            .map(|desc: &&str| Code {
                 system: System::Loinc,
                 code: norm.clone(),
                 description: desc.to_string(),
@@ -90,19 +75,53 @@ impl CodeSystem for Loinc {
             })
     }
 
-    fn ancestors(&self, _code: &str) -> Result<Vec<Code>, MedCodeError> {
-        // LOINC does not have a hierarchical ancestry in this implementation.
-        Ok(vec![])
+    fn ancestors(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
+        let norm = self.normalize(code);
+        let mut ancestors = Vec::new();
+        let mut current = norm.as_str();
+
+        while let Some(Some(parent)) = LOINC_PARENTS.get(current) {
+            if let Some(desc) = LOINC_DESCRIPTIONS.get(parent) {
+                ancestors.push(Code {
+                    system: System::Loinc,
+                    code: parent.to_string(),
+                    description: (*desc).to_string(),
+                });
+                current = parent;
+            } else {
+                break;
+            }
+        }
+
+        Ok(ancestors)
     }
 
-    fn descendants(&self, _code: &str) -> Result<Vec<Code>, MedCodeError> {
-        // No hierarchy.
-        Ok(vec![])
+    fn descendants(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
+        let norm = self.normalize(code);
+        let mut descendants = Vec::new();
+        let mut stack = vec![norm.as_str()];
+
+        while let Some(current) = stack.pop() {
+            if let Some(children) = LOINC_CHILDREN.get(current) {
+                for &child in children.iter() {
+                    if let Some(desc) = LOINC_DESCRIPTIONS.get(child) {
+                        descendants.push(Code {
+                            system: System::Loinc,
+                            code: child.to_string(),
+                            description: (*desc).to_string(),
+                        });
+                        stack.push(child);
+                    }
+                }
+            }
+        }
+
+        Ok(descendants)
     }
 
     fn is_valid(&self, code: &str) -> bool {
         let norm = self.normalize(code);
-        DESCRIPTIONS.contains_key(norm.as_str())
+        LOINC_DESCRIPTIONS.contains_key(norm.as_str())
     }
 
     fn normalize(&self, code: &str) -> String {
@@ -110,11 +129,39 @@ impl CodeSystem for Loinc {
         code.trim().to_string()
     }
 
-    fn parent(&self, _code: &str) -> Result<Option<Code>, MedCodeError> {
-        Ok(None)
+    fn parent(&self, code: &str) -> Result<Option<Code>, MedCodeError> {
+        let norm = self.normalize(code);
+        if let Some(Some(parent)) = LOINC_PARENTS.get(norm.as_str()) {
+            if let Some(desc) = LOINC_DESCRIPTIONS.get(parent) {
+                Ok(Some(Code {
+                    system: System::Loinc,
+                    code: parent.to_string(),
+                    description: (*desc).to_string(),
+                }))
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(None)
+        }
     }
 
-    fn children(&self, _code: &str) -> Result<Vec<Code>, MedCodeError> {
-        Ok(vec![])
+    fn children(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
+        let norm = self.normalize(code);
+        if let Some(children) = LOINC_CHILDREN.get(norm.as_str()) {
+            let mut result = Vec::new();
+            for &child in children.iter() {
+                if let Some(desc) = LOINC_DESCRIPTIONS.get(child) {
+                    result.push(Code {
+                        system: System::Loinc,
+                        code: child.to_string(),
+                        description: (*desc).to_string(),
+                    });
+                }
+            }
+            Ok(result)
+        } else {
+            Ok(Vec::new())
+        }
     }
 }
