@@ -1,25 +1,120 @@
-//! LOINC terminology support.
+//! LOINC (Logical Observation Identifiers Names and Codes) terminology support.
 //!
-//! This module provides lookup and component extraction for LOINC codes.
-//! It is gated behind the `loinc` feature flag.
+//! This module provides lookup and component extraction for LOINC codes, the standard code system
+//! for identifying laboratory and clinical observations. LOINC is maintained by the Regenstrief Institute.
+//!
+//! ## The LOINC 6-Axis Classification
+//!
+//! Each LOINC code represents a unique observation through six axes:
+//!
+//! - **Component**: What is being measured (e.g., "Creatinine", "Glucose")
+//! - **Property**: The kind of quantity or characteristic being measured (e.g., "Mass concentration", "Presence/Absence")
+//! - **Timing**: The aspect of time relevant to the observation (e.g., "Specific time", "Avg of multiple specimens")
+//! - **System**: The specimen or system being measured (e.g., "Serum", "Urine", "Blood")
+//! - **Scale**: The scale of measurement (e.g., "Quantitative", "Ordinal", "Nominal")
+//! - **Method**: Optional method of measurement (e.g., "Enzymatic", "HPLC")
+//!
+//! Together, these six axes create a unique identifier for the observation. For example:
+//! - **2160-0**: Creatinine (component) in Serum (system) as Mass concentration (property)
+//!   - Component: Creatinine
+//!   - Property: Mass concentration
+//!   - Timing: Specific time
+//!   - System: Serum
+//!   - Scale: Quantitative
+//!   - Method: Not specified
+//!
+//! ## Data Source
+//!
+//! LOINC codes are compiled from the official [Regenstrief Institute LOINC distribution](https://loinc.org/).
+//! This implementation uses LOINC version 2.82.
+//!
+//! ## Feature Flag
+//!
+//! This module is gated behind the `loinc` feature flag and must be enabled in `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! medcodes = { version = "0.2", features = ["loinc"] }
+//! ```
+//!
+//! ## Examples
+//!
+//! ### Basic code lookup
+//!
+//! ```ignore
+//! use medcodes::loinc::Loinc;
+//! use medcodes::CodeSystem;
+//!
+//! let loinc = Loinc::new();
+//! let code = loinc.lookup("2160-0")?;  // Creatinine in Serum
+//! assert!(code.description.contains("Creatinine"));
+//! ```
+//!
+//! ### Extract component details
+//!
+//! ```ignore
+//! use medcodes::loinc::Loinc;
+//!
+//! let loinc = Loinc::new();
+//! let components = loinc.components("2160-0")?;
+//! assert_eq!(components.component, "Creatinine");
+//! assert_eq!(components.system, "Serum");
+//! assert_eq!(components.property, "Mass concentration");
+//! ```
+//!
+//! ### Common laboratory codes
+//!
+//! - **2160-0**: Creatinine (kidney function)
+//! - **2345-7**: Glucose (diabetes screening)
+//! - **3625-2**: Troponin T (cardiac marker)
+//! - **2157-6**: Creatinine clearance (kidney function estimate)
 
 use crate::CodeSystem;
 use crate::types::{Code, MedCodeError, System};
 
 /// Component details for a LOINC code.
+///
+/// Each field represents one axis of the LOINC 6-axis classification system.
+/// Together, these axes uniquely identify a clinical observation.
+///
+/// # Example
+///
+/// For LOINC code 2160-0 (Creatinine in Serum):
+/// ```text
+/// LoincComponents {
+///     component: "Creatinine",
+///     property: "Mass concentration",
+///     timing: "Specific time",
+///     system: "Serum",
+///     scale: "Quantitative",
+///     method: None,
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoincComponents {
-    /// LOINC component axis (what is measured).
+    /// **Component axis**: What is being measured.
+    /// Examples: "Creatinine", "Glucose", "Hemoglobin", "Troponin T"
     pub component: &'static str,
-    /// LOINC property axis (kind of quantity/observation).
+
+    /// **Property axis**: The kind of quantity or characteristic being observed.
+    /// Examples: "Mass concentration", "Presence/Absence", "Molarity", "Ratio"
     pub property: &'static str,
-    /// LOINC timing axis.
+
+    /// **Timing axis**: The aspect of time relevant to the measurement.
+    /// Examples: "Specific time", "Average", "Minimum", "Maximum", "Total"
     pub timing: &'static str,
-    /// LOINC system axis (specimen/system measured).
+
+    /// **System axis**: The specimen type or body system being measured.
+    /// Examples: "Serum", "Plasma", "Whole blood", "Urine", "Cerebrospinal fluid"
     pub system: &'static str,
-    /// LOINC scale axis.
+
+    /// **Scale axis**: The scale of measurement (scalar, ordinal, nominal, etc.).
+    /// Examples: "Quantitative", "Ordinal", "Nominal", "Narrative", "Document"
     pub scale: &'static str,
-    /// Optional LOINC method axis.
+
+    /// **Method axis**: Optional method of measurement or analysis.
+    /// May be `None` if not specified.
+    /// Examples: "Enzymatic", "HPLC", "Immunoassay", "Microscopy"
     pub method: Option<&'static str>,
 }
 
@@ -42,11 +137,26 @@ impl Loinc {
         Self
     }
 
-    /// Retrieve component details for a given LOINC code.
+    /// Retrieve the 6-axis component breakdown for a given LOINC code.
+    ///
+    /// This method decomposes a LOINC code into its constituent axes, enabling analysis
+    /// of what is being measured, how it's measured, and on what specimen type.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use medcodes::loinc::Loinc;
+    ///
+    /// let loinc = Loinc::new();
+    /// let components = loinc.components("2160-0")?;  // Creatinine
+    /// println!("Measured: {}", components.component);
+    /// println!("In system: {}", components.system);
+    /// println!("Type: {}", components.property);
+    /// ```
     ///
     /// # Errors
     ///
-    /// Returns [`MedCodeError::NotFound`] when the code does not exist in the loaded map.
+    /// Returns [`MedCodeError::NotFound`] when the code does not exist in the LOINC database.
     pub fn components(&self, code: &str) -> Result<LoincComponents, MedCodeError> {
         let norm = self.normalize(code);
         LOINC_COMPONENTS

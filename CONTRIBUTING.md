@@ -315,3 +315,34 @@ To add a new clinical prediction task:
 5. **Add to lib.rs** and create tests in `tests/new_task_tests.rs`
 
 6. **Update documentation** with task description and use case
+
+## Code System Attribution and Licensing
+
+The `medcodes` crate includes code tables from multiple sources. Each source has its own terms of use and licensing requirements. Contributors and users must respect these terms:
+
+### LOINC (Logical Observation Identifiers Names and Codes)
+
+**Source**: [Regenstrief Institute](https://loinc.org/)
+**Version**: 2.82
+**License**: Copyright © 1995-2024, Regenstrief Institute, Inc. All Rights Reserved.
+
+**Terms of Use**: LOINC® is a trademark of Regenstrief Institute, Inc. Use of LOINC is governed by the [LOINC License Agreement](https://loinc.org/terms-of-use/). The license permits use for research and clinical purposes, but requires proper attribution.
+
+**Attribution**: Any application using LOINC codes should acknowledge the use of LOINC and provide the copyright notice: "LOINC is copyright © 1995-2024, Regenstrief Institute, Inc. All Rights Reserved."
+
+**Implementation**: The LOINC module is gated behind the `loinc` feature flag. When enabled, applications must:
+1. Include the LOINC copyright notice in documentation or help text
+2. Reference the LOINC® name correctly (with the registered trademark symbol or acknowledgment)
+3. Link to the [LOINC website](https://loinc.org/) where appropriate
+
+### Other Code Systems
+
+- **ICD-10-CM / ICD-10-PCS**: U.S. federal government property (public domain)
+- **ICD-9-CM**: U.S. federal government property (public domain)
+- **ATC**: WHO Collaborating Centre for Drug Statistics Methodology (freely available)
+- **NDC**: U.S. federal government property (public domain)
+- **RxNorm**: National Library of Medicine (public domain)
+- **CCS / CCSR**: AHRQ (freely available)
+- **SNOMED CT (US Edition)**: NLM License Agreement (freely available for licensed users)
+
+For questions about licensing or proper attribution, refer to the individual code system documentation or contact the respective maintainers.

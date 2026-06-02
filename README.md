@@ -52,6 +52,24 @@ clinical-tasks = "0.1"   # task windowing for ML
 clinical-tasks = { version = "0.1", features = ["longevity"] }
 ```
 
+## Supported Code Systems
+
+The `medcodes` crate includes the following medical code ontologies, compiled from official public distributions:
+
+| Code System | Version | Source | Feature Flag |
+|-------------|---------|--------|--------------|
+| ICD-10-CM / ICD-10-PCS | 2024 | [CMS](https://www.cms.gov/medicare/coding-billing/icd-10-codes) | Default |
+| ICD-9-CM | Oct 2015 (frozen) | [CMS](https://www.cms.gov/medicare/coding-billing/icd-9-cm-diagnosis-procedure-codes) | Default |
+| ATC | 2024 | [WHO Collaborating Centre](https://www.whocc.no/atc_ddd_index/) | Default |
+| NDC | Updated monthly | [FDA](https://www.fda.gov/drugs/drug-approvals-and-databases/national-drug-code-directory) | Default |
+| CCS / CCSR | 2024 | [AHRQ](https://www.ahrq.gov/research/data/hcup/tools-software.html) | Default |
+| CPT | 2024 | [AMA](https://www.ama-assn.org/practice-management/cpt) | Default |
+| RxNorm | Updated monthly | [NLM UMLS](https://www.nlm.nih.gov/research/umls/rxnorm/) | Default |
+| LOINC | 2.82 | [Regenstrief Institute](https://loinc.org/) | `loinc` |
+| SNOMED CT (US Edition) | 2024-11 | [NLM](https://www.nlm.nih.gov/healthit/snomedct/) | `snomed` |
+
+Each crate is independently distributed and can be updated without coordinating across the entire workspace.
+
 ### Medical code lookup
 
 ```rust
