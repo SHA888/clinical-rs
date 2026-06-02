@@ -8,7 +8,7 @@ This document tracks active development tasks, feature work, and known issues fo
 
 | Task | Content | DoD | Depends | Status |
 |------|---------|-----|---------|--------|
-| 1.1 | LOINC documentation: module-level docs, README, examples, license attribution | Module-level docs explain 6-axis LOINC classification; README lists LOINC version & data source; rustdoc includes lab test lookup example; LOINC terms-of-use acknowledgment in docs | - | cc:TODO |
+| 1.1 | LOINC documentation: module-level docs, README, examples, license attribution | Module-level docs explain 6-axis LOINC classification; README lists LOINC version & data source; rustdoc includes lab test lookup example; LOINC terms-of-use acknowledgment in docs | - | cc:completed [07296b6] |
 
 ---
 
