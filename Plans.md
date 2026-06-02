@@ -21,6 +21,11 @@ This document tracks active development tasks, feature work, and known issues fo
 
 ### Code Quality & Maintenance
 
+- [ ] **LOINC documentation** — Complete documentation for implemented LOINC module
+  - [ ] Module-level docs with LOINC axis explanation
+  - [ ] Data source + version in README
+  - [ ] Example: lab test lookup
+  - [ ] License/attribution: LOINC terms-of-use acknowledgment in docs
 - [ ] **Documentation coverage** — Fill missing rustdoc in public APIs
 - [ ] **Integration tests** — Add round-trip tests for ETL → code lookup → Arrow export
 - [ ] **Dependency audit** — Regular `cargo deny check` in CI
