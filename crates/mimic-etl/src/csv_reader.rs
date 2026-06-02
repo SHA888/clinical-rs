@@ -3,11 +3,23 @@
 use crate::types::{EtlError, Result};
 use arrow::array::{ArrayRef, Float64Array, Int64Array, StringArray, TimestampMicrosecondArray};
 use arrow::record_batch::RecordBatch;
+use chrono::NaiveDateTime;
 use csv::ReaderBuilder;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
+
+/// Parse a MIMIC datetime string (format: "YYYY-MM-DD HH:MM:SS") to microseconds since Unix epoch.
+/// Returns `None` if the string is empty or fails to parse.
+fn parse_timestamp_micros(datetime_str: &str) -> Option<i64> {
+    if datetime_str.is_empty() {
+        return None;
+    }
+    NaiveDateTime::parse_from_str(datetime_str, "%Y-%m-%d %H:%M:%S")
+        .ok()
+        .map(|dt| dt.and_utc().timestamp_micros())
+}
 
 /// A CSV reader that converts MIMIC tables to `RecordBatches`.
 pub struct MimicCsvReader {
@@ -109,9 +121,7 @@ impl MimicCsvReader {
                     // Add admission event (always present)
                     subject_ids.push(subject_id);
                     hadm_ids.push(hadm_id);
-                    charttimes.push(Some(
-                        record[col_indices["admittime"]].parse::<i64>().unwrap_or(0),
-                    ));
+                    charttimes.push(parse_timestamp_micros(&record[col_indices["admittime"]]));
                     event_types.push("admission".to_string());
                     event_ids.push(Some("ADMISSION".to_string()));
                     values.push(Some("Admitted".to_string()));
@@ -123,7 +133,7 @@ impl MimicCsvReader {
                     if !dischtime.is_empty() {
                         subject_ids.push(subject_id);
                         hadm_ids.push(hadm_id);
-                        charttimes.push(Some(dischtime.parse::<i64>().unwrap_or(0)));
+                        charttimes.push(parse_timestamp_micros(dischtime));
                         event_types.push("discharge".to_string());
                         event_ids.push(Some("DISCHARGE".to_string()));
                         values.push(Some("Discharged".to_string()));
@@ -136,7 +146,7 @@ impl MimicCsvReader {
                     if !deathtime.is_empty() {
                         subject_ids.push(subject_id);
                         hadm_ids.push(hadm_id);
-                        charttimes.push(Some(deathtime.parse::<i64>().unwrap_or(0)));
+                        charttimes.push(parse_timestamp_micros(deathtime));
                         event_types.push("death".to_string());
                         event_ids.push(Some("DEATH".to_string()));
                         values.push(Some("Died".to_string()));
@@ -516,7 +526,7 @@ impl MimicCsvReader {
                     charttimes.push(
                         record
                             .get(col_indices["charttime"])
-                            .and_then(|s| s.parse().ok()),
+                            .and_then(|s| parse_timestamp_micros(s)),
                     );
                     event_types.push("lab".to_string());
                     event_ids.push(

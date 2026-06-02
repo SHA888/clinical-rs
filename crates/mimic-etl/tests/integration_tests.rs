@@ -74,14 +74,24 @@ fn test_etl_admissions_to_arrow_roundtrip() {
     mimic_etl::to_arrow_ipc(&batches, &arrow_path).expect("Failed to write Arrow IPC file");
 
     assert!(arrow_path.exists(), "Arrow file should be created");
+    let arrow_size = fs::metadata(&arrow_path).expect("Arrow metadata").len();
+    assert!(
+        arrow_size > 100,
+        "Arrow file should contain data, got {arrow_size} bytes"
+    );
 
     // Step 5: Write to Parquet and verify
     let parquet_path = temp_dir.path().join("admissions.parquet");
     to_parquet(&batches, &parquet_path).expect("Failed to write Parquet");
 
     assert!(parquet_path.exists(), "Parquet file should be created");
+    let parquet_size = fs::metadata(&parquet_path).expect("Parquet metadata").len();
+    assert!(
+        parquet_size > 100,
+        "Parquet file should contain data, got {parquet_size} bytes"
+    );
 
-    // Step 6: Verify schema consistency
+    // Step 6: Verify schema consistency and data validity
     let batch = &batches[0];
     let schema = batch.schema();
 
@@ -91,6 +101,21 @@ fn test_etl_admissions_to_arrow_roundtrip() {
         column_names.contains(&"subject_id") && column_names.contains(&"hadm_id"),
         "Schema should contain expected clinical columns"
     );
+
+    // Verify timestamps are valid (not silently zeroed to epoch)
+    if let Some(charttime_col) = batch.column_by_name("charttime") {
+        use arrow::array::Array;
+        let ts_array = charttime_col
+            .as_any()
+            .downcast_ref::<arrow::array::TimestampMicrosecondArray>()
+            .expect("charttime should be TimestampMicrosecondArray");
+        let has_valid_timestamp =
+            (0..ts_array.len()).any(|i| !ts_array.is_null(i) && ts_array.value(i) != 0);
+        assert!(
+            has_valid_timestamp,
+            "At least one admission should have a valid (non-zero) timestamp"
+        );
+    }
 }
 
 #[test]
@@ -125,6 +150,22 @@ fn test_etl_labevents_to_arrow() {
         .map(arrow::record_batch::RecordBatch::num_rows)
         .sum();
     assert_eq!(total_rows, 2, "Should have parsed all 2 lab events");
+
+    // Verify timestamps are valid (not all null or zeroed)
+    let batch = &batches[0];
+    if let Some(charttime_col) = batch.column_by_name("charttime") {
+        use arrow::array::Array;
+        let ts_array = charttime_col
+            .as_any()
+            .downcast_ref::<arrow::array::TimestampMicrosecondArray>()
+            .expect("charttime should be TimestampMicrosecondArray");
+        let has_valid_timestamp =
+            (0..ts_array.len()).any(|i| !ts_array.is_null(i) && ts_array.value(i) != 0);
+        assert!(
+            has_valid_timestamp,
+            "At least one lab event should have a valid (non-zero) timestamp"
+        );
+    }
 }
 
 #[test]
@@ -222,14 +263,14 @@ fn test_code_lookup_integration() {
         use medcodes::CodeSystem;
         use mimic_etl::CodeNormalizer;
 
-        let normalizer = CodeNormalizer::new();
+        let normalizer = CodeNormalizer::for_version(MimicVersion::MimicIV);
 
         // Test ICD-10 code normalization
-        let code = normalizer.normalize("I10", "diagnosis").unwrap();
+        let code = normalizer.normalize("I10");
         assert!(!code.is_empty(), "Should normalize ICD-10 code");
 
         // Test that normalized code can be looked up
-        use medcodes::Icd10Cm;
+        use medcodes::icd10cm::Icd10Cm;
         let icd10 = Icd10Cm::new();
         let lookup = icd10.lookup(&code);
         assert!(lookup.is_ok(), "Normalized code should be lookupable");
