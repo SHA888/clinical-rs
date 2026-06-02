@@ -88,3 +88,8 @@ criterion/
 .skill/
 .cursor/rules/skill-context.md
 .windsurf/rules/skill-context.md
+
+# Claude Code and Harness
+/.claude/
+/.harness-mem/state/
+/out/
