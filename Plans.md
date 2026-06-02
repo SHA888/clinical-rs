@@ -18,7 +18,7 @@ This document tracks active development tasks, feature work, and known issues fo
 
 | Task | Content | DoD | Depends | Status |
 |------|---------|-----|---------|--------|
-| 2.1 | Documentation coverage — Fill missing rustdoc in public APIs | All public items in medcodes, mimic-etl, clinical-tasks have rustdoc with examples; `cargo doc --all` builds without warnings | - | cc:TODO |
+| 2.1 | Documentation coverage — Fill missing rustdoc in public APIs | All public items in medcodes, mimic-etl, clinical-tasks have rustdoc with examples; `cargo doc --all` builds without warnings | - | cc:completed [07296b6] |
 | 2.2 | Integration tests — Round-trip ETL → code lookup → Arrow export | Test loads MIMIC CSV → transforms to Arrow → looks up codes → validates schema round-trip; tests pass with real data sample | - | cc:TODO |
 | 2.3 | Dependency audit — Regular `cargo deny check` in CI | CI enforces `cargo deny` on license, advisories, sources; all dependencies have approved licenses | - | cc:TODO |
 | 2.4 | MSRV bump candidate — Evaluate 1.95+ once stable | Research Rust 1.95 compatibility; identify breaking changes if any; update MSRV in Cargo.toml if feasible | - | cc:TODO |
