@@ -13,6 +13,33 @@ permissions:
   contents: read
 
 jobs:
+  deny:
+    name: Dependency Audit (cargo-deny)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
+      - name: Check advisories
+        run: cargo deny check advisories
+
+      - name: Check licenses
+        run: cargo deny check licenses
+
+      - name: Check banned crates
+        run: cargo deny check bans
+
+      - name: Check sources
+        run: cargo deny check sources
+
   test:
     name: Test
     runs-on: ${{ matrix.os }}
@@ -51,11 +78,3 @@ jobs:
 
       - name: Build documentation
         run: cargo doc --workspace --no-deps
-
-      - name: Run cargo-deny (Unix)
-        if: matrix.os != 'windows-latest'
-        run: cargo deny check
-
-      - name: Run cargo-deny (licenses/bans only on Windows)
-        if: matrix.os == 'windows-latest'
-        run: cargo deny check licenses bans
