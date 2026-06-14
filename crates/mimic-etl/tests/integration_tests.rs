@@ -13,6 +13,34 @@ use tempfile::TempDir;
 
 use mimic_etl::{DatasetConfig, MimicCsvReader, MimicVersion, StreamingArrowWriter, to_parquet};
 
+/// Helper to create a test `DatasetConfig` pointing to a temp directory
+fn test_config(temp_dir: &TempDir, table_name: &str) -> DatasetConfig {
+    DatasetConfig {
+        root_path: temp_dir.path().to_str().unwrap().to_string(),
+        version: MimicVersion::MimicIV,
+        tables: vec![table_name.to_string()],
+        batch_size: 128_000,
+        parallelism: 1,
+        use_memmap: false,
+    }
+}
+
+/// Assert that a batch has valid (non-null) timestamps in the given column
+fn assert_valid_timestamps(batch: &arrow::record_batch::RecordBatch, column_name: &str) {
+    use arrow::array::Array;
+    let ts_col = batch
+        .column_by_name(column_name)
+        .unwrap_or_else(|| panic!("{column_name} column must exist"));
+    let ts_array = ts_col
+        .as_any()
+        .downcast_ref::<arrow::array::TimestampMicrosecondArray>()
+        .unwrap_or_else(|| panic!("{column_name} should be TimestampMicrosecondArray"));
+    assert!(
+        ts_array.null_count() < ts_array.len(),
+        "{column_name} should have at least one non-null timestamp"
+    );
+}
+
 /// Sample MIMIC-IV admissions CSV data
 fn sample_admissions_csv() -> String {
     "subject_id,hadm_id,admittime,dischtime,deathtime,admission_type,admission_location,discharge_location,insurance,language,marital_status,ethnicity,edregtime,edouttime,hospital_expire_flag\n100001,5000001,2020-01-15 08:00:00,2020-01-20 12:00:00,,URGENT,EMERGENCY ROOM ADMIT,HOME HEALTH CARE,Medicaid,ENGLISH,,WHITE,2020-01-15 07:30:00,2020-01-15 09:15:00,0\n100002,5000002,2020-01-16 08:00:00,2020-01-22 12:00:00,,EMERGENCY,EMERGENCY ROOM ADMIT,HOME,Medicare,ENGLISH,,BLACK/AFRICAN AMERICAN,2020-01-16 07:45:00,2020-01-16 09:30:00,0\n".to_string()
@@ -36,14 +64,7 @@ fn test_etl_admissions_to_arrow_roundtrip() {
     fs::write(&admissions_path, sample_admissions_csv()).expect("Failed to write admissions CSV");
 
     // Step 1: Create dataset config pointing to temp directory
-    let config = DatasetConfig {
-        root_path: temp_dir.path().to_str().unwrap().to_string(),
-        version: MimicVersion::MimicIV,
-        tables: vec!["admissions".to_string()],
-        batch_size: 128_000,
-        parallelism: 1,
-        use_memmap: false,
-    };
+    let config = test_config(&temp_dir, "admissions");
 
     // Step 2: Create reader and load admissions table
     let reader = MimicCsvReader::new(config);
@@ -102,20 +123,8 @@ fn test_etl_admissions_to_arrow_roundtrip() {
         "Schema should contain expected clinical columns"
     );
 
-    // Verify timestamps are valid (not silently zeroed to epoch)
-    if let Some(charttime_col) = batch.column_by_name("charttime") {
-        use arrow::array::Array;
-        let ts_array = charttime_col
-            .as_any()
-            .downcast_ref::<arrow::array::TimestampMicrosecondArray>()
-            .expect("charttime should be TimestampMicrosecondArray");
-        let has_valid_timestamp =
-            (0..ts_array.len()).any(|i| !ts_array.is_null(i) && ts_array.value(i) != 0);
-        assert!(
-            has_valid_timestamp,
-            "At least one admission should have a valid (non-zero) timestamp"
-        );
-    }
+    // Verify timestamps are valid (not silently dropped to null)
+    assert_valid_timestamps(batch, "charttime");
 }
 
 #[test]
@@ -127,14 +136,7 @@ fn test_etl_labevents_to_arrow() {
     fs::write(&labevents_path, sample_labevents_csv()).expect("Failed to write labevents CSV");
 
     // Create dataset config
-    let config = DatasetConfig {
-        root_path: temp_dir.path().to_str().unwrap().to_string(),
-        version: MimicVersion::MimicIV,
-        tables: vec!["labevents".to_string()],
-        batch_size: 128_000,
-        parallelism: 1,
-        use_memmap: false,
-    };
+    let config = test_config(&temp_dir, "labevents");
 
     // Load labevents table
     let reader = MimicCsvReader::new(config);
@@ -151,21 +153,9 @@ fn test_etl_labevents_to_arrow() {
         .sum();
     assert_eq!(total_rows, 2, "Should have parsed all 2 lab events");
 
-    // Verify timestamps are valid (not all null or zeroed)
+    // Verify timestamps are valid (not all null)
     let batch = &batches[0];
-    if let Some(charttime_col) = batch.column_by_name("charttime") {
-        use arrow::array::Array;
-        let ts_array = charttime_col
-            .as_any()
-            .downcast_ref::<arrow::array::TimestampMicrosecondArray>()
-            .expect("charttime should be TimestampMicrosecondArray");
-        let has_valid_timestamp =
-            (0..ts_array.len()).any(|i| !ts_array.is_null(i) && ts_array.value(i) != 0);
-        assert!(
-            has_valid_timestamp,
-            "At least one lab event should have a valid (non-zero) timestamp"
-        );
-    }
+    assert_valid_timestamps(batch, "charttime");
 }
 
 #[test]
@@ -176,14 +166,7 @@ fn test_etl_event_parsing_integrity() {
 
     fs::write(&admissions_path, sample_admissions_csv()).expect("Failed to write test CSV");
 
-    let config = DatasetConfig {
-        root_path: temp_dir.path().to_str().unwrap().to_string(),
-        version: MimicVersion::MimicIV,
-        tables: vec!["admissions".to_string()],
-        batch_size: 128_000,
-        parallelism: 1,
-        use_memmap: false,
-    };
+    let config = test_config(&temp_dir, "admissions");
 
     let reader = MimicCsvReader::new(config);
     let batches = reader

@@ -42,6 +42,7 @@ jobs:
 
   test:
     name: Test
+    needs: [deny]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -63,9 +64,6 @@ jobs:
 
       - name: Install cargo-nextest
         run: cargo install cargo-nextest --locked
-
-      - name: Install cargo-deny
-        run: cargo install cargo-deny --locked
 
       - name: Check formatting
         run: cargo fmt --all -- --check

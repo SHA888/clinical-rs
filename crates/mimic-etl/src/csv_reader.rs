@@ -425,7 +425,7 @@ impl MimicCsvReader {
 
                     // Add start event
                     if let Some(starttime) = record.get(col_indices["starttime"]) {
-                        charttimes.push(Some(starttime.parse::<i64>().unwrap_or(0)));
+                        charttimes.push(parse_timestamp_micros(starttime));
                         event_types.push("medication_start".to_string());
                         event_ids.push(
                             record
@@ -451,7 +451,7 @@ impl MimicCsvReader {
 
                     // Add stop event if available
                     if let Some(stoptime) = record.get(col_indices["stoptime"]) {
-                        charttimes.push(Some(stoptime.parse::<i64>().unwrap_or(0)));
+                        charttimes.push(parse_timestamp_micros(stoptime));
                         event_types.push("medication_stop".to_string());
                         event_ids.push(
                             record
@@ -1273,5 +1273,42 @@ mod tests {
 
         let result = get_column_indices(&headers, &["subject_id", "nonexistent"]);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_timestamp_micros_valid() {
+        let result = parse_timestamp_micros("2020-01-15 09:30:00");
+        assert!(result.is_some());
+        let micros = result.unwrap();
+        // 2020-01-15 09:30:00 UTC = 1579080600 seconds since epoch (adjusted for UTC)
+        assert_eq!(micros, 1_579_080_600_000_000i64);
+    }
+
+    #[test]
+    fn test_parse_timestamp_micros_empty_string() {
+        let result = parse_timestamp_micros("");
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_parse_timestamp_micros_whitespace_only() {
+        let result = parse_timestamp_micros("   ");
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_parse_timestamp_micros_invalid_format() {
+        let result = parse_timestamp_micros("2020/01/15 09:30:00");
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_parse_timestamp_micros_different_date() {
+        let result = parse_timestamp_micros("2015-06-20 14:45:30");
+        assert!(result.is_some());
+        let micros = result.unwrap();
+        // Verify it's a reasonable microsecond value in the 2015 range
+        assert!(micros > 1_434_000_000_000_000i64);
+        assert!(micros < 1_450_000_000_000_000i64);
     }
 }
