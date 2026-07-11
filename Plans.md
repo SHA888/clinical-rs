@@ -27,7 +27,7 @@ This document tracks active development tasks, feature work, and known issues fo
 
 | Task | Content | DoD | Depends | Status |
 |------|---------|-----|---------|--------|
-| 3.1 | LOINC expansion — Add LOINC hierarchy and relationships | LOINC parent/child/ancestor/descendant methods implemented; tests verify hierarchy traversal; benchmarks included | - | cc:TODO |
+| 3.1 | LOINC expansion — Add LOINC hierarchy and relationships | LOINC parent/child/ancestor/descendant methods implemented; tests verify hierarchy traversal; benchmarks included | - | cc:completed [4b689ec] |
 | 3.2 | SNOMED CT relationships — Implement `is_a`, `part_of`, `has_component` traversal | SNOMED CT module with polyhierarchy support; transitive closure computed; typed relationships implemented; tests + benchmarks | 3.1 | cc:TODO |
 | 3.3 | eICU ETL — Add eICU dataset support (beyond MIMIC-IV) | eICU CSV parser similar to mimic-etl; Arrow schema compatible with existing code lookup; tests with sample eICU data | - | cc:TODO |
 | 3.4 | Comorbidity scores — Implement Charlson, Elixhauser scoring | clinical-tasks module with score computation; input: Arrow schema with diagnoses; output: Arrow schema with scores; tests with known inputs | - | cc:TODO |
