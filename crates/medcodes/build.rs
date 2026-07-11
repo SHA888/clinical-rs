@@ -30,6 +30,9 @@ fn setup_rerun_if_changed() {
         println!("cargo:rerun-if-changed=data/atc/");
         println!("cargo:rerun-if-changed=data/ndc/");
         println!("cargo:rerun-if-changed=data/loinc/LoincTable/Loinc.csv");
+        println!(
+            "cargo:rerun-if-changed=data/loinc/AccessoryFiles/ComponentHierarchyBySystem/ComponentHierarchyBySystem.csv"
+        );
     }
 }
 
@@ -209,13 +212,102 @@ fn generate_loinc_data() {
     }
 
     eprintln!("Parsed {} LOINC codes", descriptions.len());
-    generate_loinc_maps(&descriptions, &components);
+
+    // The multiaxial hierarchy (parent/child edges + Part/group display names)
+    // lives in a separate accessory file and is optional: if it is missing we
+    // still generate real term data with empty hierarchy maps.
+    let hierarchy_csv_path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/data/loinc/AccessoryFiles/ComponentHierarchyBySystem/ComponentHierarchyBySystem.csv"
+    );
+    let (parents, children, part_names) = if Path::new(hierarchy_csv_path).exists() {
+        let (parents, children, part_names) = parse_loinc_hierarchy(hierarchy_csv_path);
+        eprintln!(
+            "Parsed LOINC hierarchy: {} parent edges, {} parent groups, {} part names",
+            parents.len(),
+            children.len(),
+            part_names.len()
+        );
+        (parents, children, part_names)
+    } else {
+        eprintln!(
+            "Warning: LOINC hierarchy file not found at {hierarchy_csv_path}. Using empty LOINC hierarchy maps."
+        );
+        (HashMap::new(), HashMap::new(), HashMap::new())
+    };
+
+    generate_loinc_maps(&descriptions, &components, &parents, &children, &part_names);
+}
+
+/// Parse the LOINC multiaxial hierarchy file (`ComponentHierarchyBySystem.csv`).
+///
+/// Column layout: `PATH_TO_ROOT, SEQUENCE, IMMEDIATE_PARENT, CODE, CODE_TEXT`.
+/// `IMMEDIATE_PARENT` is always a LOINC Part number (`LP...`); `CODE` is either
+/// a Part number (branch node) or a LOINC term number (leaf). A small fraction
+/// of codes appear under more than one parent (true polyhierarchy) — the first
+/// occurrence in the file is kept as the canonical parent, matching the
+/// single-parent tree model already used by the ICD-10-CM hierarchy.
+#[cfg(feature = "loinc")]
+fn parse_loinc_hierarchy(
+    csv_path: &str,
+) -> (
+    HashMap<String, String>,
+    HashMap<String, Vec<String>>,
+    HashMap<String, String>,
+) {
+    let mut parents: HashMap<String, String> = HashMap::new();
+    let mut part_names: HashMap<String, String> = HashMap::new();
+
+    let mut reader = csv::Reader::from_path(csv_path).expect("Failed to read LOINC hierarchy CSV");
+    for result in reader.records() {
+        let record = result.expect("Failed to parse LOINC hierarchy CSV record");
+
+        let code = record.get(3).unwrap_or("").trim();
+        if code.is_empty() {
+            continue;
+        }
+        let immediate_parent = record.get(2).unwrap_or("").trim();
+        let code_text = record.get(4).unwrap_or("").trim();
+
+        if code.starts_with("LP") {
+            let _ = part_names
+                .entry(code.to_string())
+                .or_insert_with(|| code_text.to_string());
+        }
+        if !immediate_parent.is_empty() {
+            let _ = parents
+                .entry(code.to_string())
+                .or_insert_with(|| immediate_parent.to_string());
+        }
+    }
+
+    let mut children: HashMap<String, Vec<String>> = HashMap::new();
+    for (child, parent) in &parents {
+        children
+            .entry(parent.clone())
+            .or_default()
+            .push(child.clone());
+    }
+    for kids in children.values_mut() {
+        kids.sort();
+    }
+
+    (parents, children, part_names)
 }
 
 /// Write a u16-length-prefixed string to `writer`.
 fn write_loinc_str(writer: &mut impl std::io::Write, s: &str) {
     let len = u16::try_from(s.len()).expect("LOINC field exceeds u16");
     writer.write_all(&len.to_le_bytes()).expect("write failed");
+    writer.write_all(s.as_bytes()).expect("write failed");
+}
+
+/// Write a u8-length-prefixed LOINC code string to `writer` (codes are short:
+/// term numbers and Part numbers are both well under 255 bytes).
+fn write_loinc_code(writer: &mut impl std::io::Write, s: &str) {
+    writer
+        .write_all(&[u8::try_from(s.len()).expect("LOINC code too long")])
+        .expect("write failed");
     writer.write_all(s.as_bytes()).expect("write failed");
 }
 
@@ -227,6 +319,9 @@ fn write_loinc_str(writer: &mut impl std::io::Write, s: &str) {
 fn generate_loinc_maps(
     descriptions: &HashMap<String, String>,
     components: &HashMap<String, (String, String, String, String, String, Option<String>)>,
+    parents: &HashMap<String, String>,
+    children: &HashMap<String, Vec<String>>,
+    part_names: &HashMap<String, String>,
 ) {
     use std::io::Write;
 
@@ -293,6 +388,79 @@ fn generate_loinc_maps(
         w.flush().expect("flush");
     }
 
+    // --- loinc_parents.bin ---
+    // format: [u32 count] then per entry: [u8 key_len][key][u8 has_parent] (if 1: [u8 parent_len][parent])
+    {
+        let path = std::path::Path::new(&out_dir).join("loinc_parents.bin");
+        let f = std::fs::File::create(&path).expect("create loinc_parents.bin");
+        let mut w = std::io::BufWriter::new(f);
+        w.write_all(
+            &u32::try_from(parents.len())
+                .expect("too many entries")
+                .to_le_bytes(),
+        )
+        .expect("write");
+        let mut entries: Vec<_> = parents.iter().collect();
+        entries.sort_by_key(|(k, _)| k.as_str());
+        for (key, parent) in &entries {
+            write_loinc_code(&mut w, key);
+            w.write_all(&[1u8]).expect("write");
+            write_loinc_code(&mut w, parent);
+        }
+        w.flush().expect("flush");
+    }
+
+    // --- loinc_children.bin ---
+    // format: [u32 parent_count] then per entry:
+    //   [u8 key_len][key] [u16 num_children] then [u8 child_len][child] * num_children
+    {
+        let path = std::path::Path::new(&out_dir).join("loinc_children.bin");
+        let f = std::fs::File::create(&path).expect("create loinc_children.bin");
+        let mut w = std::io::BufWriter::new(f);
+        w.write_all(
+            &u32::try_from(children.len())
+                .expect("too many entries")
+                .to_le_bytes(),
+        )
+        .expect("write");
+        let mut entries: Vec<_> = children.iter().collect();
+        entries.sort_by_key(|(k, _)| k.as_str());
+        for (key, kids) in &entries {
+            write_loinc_code(&mut w, key);
+            w.write_all(
+                &u16::try_from(kids.len())
+                    .expect("too many children")
+                    .to_le_bytes(),
+            )
+            .expect("write");
+            for child in *kids {
+                write_loinc_code(&mut w, child);
+            }
+        }
+        w.flush().expect("flush");
+    }
+
+    // --- loinc_part_names.bin ---
+    // format: identical to loinc_descriptions.bin: [u32 count] then [u8 key_len][key][u16 val_len][val]
+    {
+        let path = std::path::Path::new(&out_dir).join("loinc_part_names.bin");
+        let f = std::fs::File::create(&path).expect("create loinc_part_names.bin");
+        let mut w = std::io::BufWriter::new(f);
+        w.write_all(
+            &u32::try_from(part_names.len())
+                .expect("too many entries")
+                .to_le_bytes(),
+        )
+        .expect("write");
+        let mut entries: Vec<_> = part_names.iter().collect();
+        entries.sort_by_key(|(k, _)| k.as_str());
+        for (key, val) in &entries {
+            write_loinc_code(&mut w, key);
+            write_loinc_str(&mut w, val);
+        }
+        w.flush().expect("flush");
+    }
+
     // --- loinc_data.rs: tiny shim that embeds the blobs and parses at runtime ---
     let out_path = std::path::Path::new(&out_dir).join("loinc_data.rs");
     let rs_code = r#"// Generated by build.rs — do not edit.
@@ -304,6 +472,12 @@ static LOINC_DESCRIPTIONS_BIN: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/loinc_descriptions.bin"));
 static LOINC_COMPONENTS_BIN: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/loinc_components.bin"));
+static LOINC_PARENTS_BIN: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/loinc_parents.bin"));
+static LOINC_CHILDREN_BIN: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/loinc_children.bin"));
+static LOINC_PART_NAMES_BIN: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/loinc_part_names.bin"));
 
 fn loinc_parse_descriptions(data: &'static [u8]) -> HashMap<&'static str, &'static str> {
     let mut pos = 0usize;
@@ -369,19 +543,71 @@ pub static LOINC_DESCRIPTIONS: Lazy<HashMap<&'static str, &'static str>> =
 pub static LOINC_COMPONENTS: Lazy<HashMap<&'static str, crate::loinc::LoincComponents>> =
     Lazy::new(|| loinc_parse_components(LOINC_COMPONENTS_BIN));
 
-/// LOINC parent mapping — empty until ComponentHierarchyBySystem is loaded.
-pub static LOINC_PARENTS: Lazy<HashMap<&'static str, Option<&'static str>>> =
-    Lazy::new(HashMap::new);
+fn loinc_read_code(data: &'static [u8], pos: &mut usize) -> &'static str {
+    let l = data[*pos] as usize;
+    *pos += 1;
+    let s = std::str::from_utf8(&data[*pos..*pos + l]).unwrap();
+    *pos += l;
+    s
+}
 
-/// LOINC children mapping — empty until ComponentHierarchyBySystem is loaded.
+fn loinc_parse_parents(data: &'static [u8]) -> HashMap<&'static str, Option<&'static str>> {
+    let mut pos = 0usize;
+    let count = u32::from_le_bytes(data[pos..pos + 4].try_into().unwrap()) as usize;
+    pos += 4;
+    let mut map = HashMap::with_capacity(count);
+    for _ in 0..count {
+        let key = loinc_read_code(data, &mut pos);
+        let has_parent = data[pos];
+        pos += 1;
+        let parent = if has_parent == 1 {
+            Some(loinc_read_code(data, &mut pos))
+        } else {
+            None
+        };
+        let _ = map.insert(key, parent);
+    }
+    map
+}
+
+fn loinc_parse_children(data: &'static [u8]) -> HashMap<&'static str, Vec<&'static str>> {
+    let mut pos = 0usize;
+    let count = u32::from_le_bytes(data[pos..pos + 4].try_into().unwrap()) as usize;
+    pos += 4;
+    let mut map = HashMap::with_capacity(count);
+    for _ in 0..count {
+        let key = loinc_read_code(data, &mut pos);
+        let num_children = u16::from_le_bytes(data[pos..pos + 2].try_into().unwrap()) as usize;
+        pos += 2;
+        let mut kids = Vec::with_capacity(num_children);
+        for _ in 0..num_children {
+            kids.push(loinc_read_code(data, &mut pos));
+        }
+        let _ = map.insert(key, kids);
+    }
+    map
+}
+
+/// LOINC parent mapping keyed by LOINC code (term or Part number).
+pub static LOINC_PARENTS: Lazy<HashMap<&'static str, Option<&'static str>>> =
+    Lazy::new(|| loinc_parse_parents(LOINC_PARENTS_BIN));
+
+/// LOINC children mapping keyed by LOINC code (term or Part number).
 pub static LOINC_CHILDREN: Lazy<HashMap<&'static str, Vec<&'static str>>> =
-    Lazy::new(HashMap::new);
+    Lazy::new(|| loinc_parse_children(LOINC_CHILDREN_BIN));
+
+/// LOINC Part/group display names (hierarchy branch nodes not present in
+/// `LOINC_DESCRIPTIONS`, which only covers terms).
+pub static LOINC_PART_NAMES: Lazy<HashMap<&'static str, &'static str>> =
+    Lazy::new(|| loinc_parse_descriptions(LOINC_PART_NAMES_BIN));
 "#;
     std::fs::write(&out_path, rs_code).expect("Failed to write loinc_data.rs");
     eprintln!(
-        "Generated LOINC data at {} with {} codes",
+        "Generated LOINC data at {} with {} codes, {} parent edges, {} part names",
         out_path.display(),
-        descriptions.len()
+        descriptions.len(),
+        parents.len(),
+        part_names.len()
     );
 }
 
@@ -399,6 +625,7 @@ pub static LOINC_DESCRIPTIONS: Lazy<HashMap<&'static str, &'static str>> = Lazy:
 pub static LOINC_COMPONENTS: Lazy<HashMap<&'static str, crate::loinc::LoincComponents>> = Lazy::new(HashMap::new);
 pub static LOINC_PARENTS: Lazy<HashMap<&'static str, Option<&'static str>>> = Lazy::new(HashMap::new);
 pub static LOINC_CHILDREN: Lazy<HashMap<&'static str, Vec<&'static str>>> = Lazy::new(HashMap::new);
+pub static LOINC_PART_NAMES: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(HashMap::new);
 ";
 
     if let Err(e) = std::fs::write(&out_path, empty_code) {
@@ -525,7 +752,7 @@ fn parse_cms_xml(
                 _ => {}
             },
             Event::Text(e) => {
-                let text = e.unescape()?.to_string();
+                let text = e.decode()?.to_string();
                 if in_name {
                     current_code = Some(text.to_uppercase());
                 } else if in_desc {

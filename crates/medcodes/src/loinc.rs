@@ -28,6 +28,16 @@
 //! LOINC codes are compiled from the official [Regenstrief Institute LOINC distribution](https://loinc.org/).
 //! This implementation uses LOINC version 2.82.
 //!
+//! ## Hierarchy
+//!
+//! Term hierarchy is derived from the Regenstrief `ComponentHierarchyBySystem`
+//! (multiaxial hierarchy) file. The ancestors of a LOINC term are LOINC Part
+//! numbers (e.g. `LP385359-7`), not other terms — the hierarchy groups
+//! observations by Component, System, and Class rather than linking terms
+//! directly to each other. [`Loinc`] implements the `parent`/`children`/
+//! `ancestors`/`descendants` methods from [`CodeSystem`] to traverse this
+//! structure from either a term or a Part code.
+//!
 //! ## Feature Flag
 //!
 //! This module is gated behind the `loinc` feature flag and must be enabled in `Cargo.toml`:
@@ -169,7 +179,30 @@ impl Loinc {
     }
 }
 
+/// Resolve a display description for a LOINC code, whether it is a term
+/// (from `LOINC_DESCRIPTIONS`) or a hierarchy Part/group node (from
+/// `LOINC_PART_NAMES`).
+fn loinc_display_name(code: &str) -> Option<&'static str> {
+    LOINC_DESCRIPTIONS
+        .get(code)
+        .or_else(|| LOINC_PART_NAMES.get(code))
+        .copied()
+}
+
+/// True if `code` is a known node in the LOINC hierarchy — either a term or a
+/// Part/group node used as an intermediate hierarchy branch.
+fn loinc_is_known_node(code: &str) -> bool {
+    LOINC_DESCRIPTIONS.contains_key(code) || LOINC_PART_NAMES.contains_key(code)
+}
+
 impl CodeSystem for Loinc {
+    /// Look up a LOINC term by its `LOINC_NUM`.
+    ///
+    /// Only term codes are recognized here — LOINC Part/group numbers (e.g.
+    /// `LP385359-7`) used internally by the hierarchy are not "codes" in the
+    /// `lookup`/`is_valid` sense, even though [`Self::parent`],
+    /// [`Self::children`], [`Self::ancestors`], and [`Self::descendants`]
+    /// accept them as traversal nodes.
     fn lookup(&self, code: &str) -> Result<Code, MedCodeError> {
         let norm = self.normalize(code);
         LOINC_DESCRIPTIONS
@@ -187,15 +220,29 @@ impl CodeSystem for Loinc {
 
     fn ancestors(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
         let norm = self.normalize(code);
+        if !loinc_is_known_node(norm.as_str()) {
+            return Err(MedCodeError::not_found(code, System::Loinc));
+        }
+
         let mut ancestors = Vec::new();
         let mut current = norm.as_str();
+        let mut visited = std::collections::HashSet::new();
+        let _ = visited.insert(current);
 
         while let Some(Some(parent)) = LOINC_PARENTS.get(current) {
-            if let Some(desc) = LOINC_DESCRIPTIONS.get(parent) {
+            if !visited.insert(parent) {
+                // Defensive guard against a parent-chain cycle: the canonical
+                // parent map is built from vendored LOINC data via first-seen
+                // tie-breaking over a true polyhierarchy, so cycle-freedom is
+                // an empirical property of that data, not a type-level
+                // guarantee (unlike ICD-10-CM's strictly-shortening codes).
+                break;
+            }
+            if let Some(desc) = loinc_display_name(parent) {
                 ancestors.push(Code {
                     system: System::Loinc,
                     code: parent.to_string(),
-                    description: (*desc).to_string(),
+                    description: desc.to_string(),
                 });
                 current = parent;
             } else {
@@ -208,17 +255,25 @@ impl CodeSystem for Loinc {
 
     fn descendants(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
         let norm = self.normalize(code);
+        if !loinc_is_known_node(norm.as_str()) {
+            return Err(MedCodeError::not_found(code, System::Loinc));
+        }
+
         let mut descendants = Vec::new();
         let mut stack = vec![norm.as_str()];
+        let mut visited = std::collections::HashSet::new();
 
         while let Some(current) = stack.pop() {
+            if !visited.insert(current) {
+                continue;
+            }
             if let Some(children) = LOINC_CHILDREN.get(current) {
                 for &child in children.iter() {
-                    if let Some(desc) = LOINC_DESCRIPTIONS.get(child) {
+                    if let Some(desc) = loinc_display_name(child) {
                         descendants.push(Code {
                             system: System::Loinc,
                             code: child.to_string(),
-                            description: (*desc).to_string(),
+                            description: desc.to_string(),
                         });
                         stack.push(child);
                     }
@@ -241,31 +296,37 @@ impl CodeSystem for Loinc {
 
     fn parent(&self, code: &str) -> Result<Option<Code>, MedCodeError> {
         let norm = self.normalize(code);
+        if !loinc_is_known_node(norm.as_str()) {
+            return Err(MedCodeError::not_found(code, System::Loinc));
+        }
+
         if let Some(Some(parent)) = LOINC_PARENTS.get(norm.as_str()) {
-            if let Some(desc) = LOINC_DESCRIPTIONS.get(parent) {
-                Ok(Some(Code {
+            if let Some(desc) = loinc_display_name(parent) {
+                return Ok(Some(Code {
                     system: System::Loinc,
                     code: parent.to_string(),
-                    description: (*desc).to_string(),
-                }))
-            } else {
-                Ok(None)
+                    description: desc.to_string(),
+                }));
             }
-        } else {
-            Ok(None)
         }
+
+        Ok(None)
     }
 
     fn children(&self, code: &str) -> Result<Vec<Code>, MedCodeError> {
         let norm = self.normalize(code);
+        if !loinc_is_known_node(norm.as_str()) {
+            return Err(MedCodeError::not_found(code, System::Loinc));
+        }
+
         if let Some(children) = LOINC_CHILDREN.get(norm.as_str()) {
             let mut result = Vec::new();
             for &child in children.iter() {
-                if let Some(desc) = LOINC_DESCRIPTIONS.get(child) {
+                if let Some(desc) = loinc_display_name(child) {
                     result.push(Code {
                         system: System::Loinc,
                         code: child.to_string(),
-                        description: (*desc).to_string(),
+                        description: desc.to_string(),
                     });
                 }
             }

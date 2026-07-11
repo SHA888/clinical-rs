@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **medcodes**: LOINC hierarchy traversal — `parent`/`children`/`ancestors`/`descendants` on `Loinc` now walk the official multiaxial hierarchy (`ComponentHierarchyBySystem`), including LOINC Part/group nodes; added criterion benchmarks for the new traversal methods
+
 ## [0.2.0 - rc1 (medcodes)] - 2026-04-12
 
 ### Added
