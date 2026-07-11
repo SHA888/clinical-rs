@@ -91,5 +91,6 @@ criterion/
 
 # Claude Code and Harness
 /.claude/
+**/.claude/
 /.harness-mem/state/
 /out/
