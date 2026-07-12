@@ -166,12 +166,9 @@ fn test_loinc_hierarchy_not_found() {
         loinc.ancestors("9999-9").map(|_| ()),
         loinc.descendants("9999-9").map(|_| ()),
     ] {
-        match method_result.unwrap_err() {
-            MedCodeError::NotFound { system, code } => {
-                assert_eq!(system, System::Loinc);
-                assert_eq!(code, "9999-9");
-            }
-            _ => panic!("Unexpected error type"),
-        }
+        assert!(
+            matches!(method_result.unwrap_err(), MedCodeError::NotFound { code, system }
+            if code == "9999-9" && system == System::Loinc)
+        );
     }
 }

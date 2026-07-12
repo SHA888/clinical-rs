@@ -479,6 +479,11 @@ static LOINC_CHILDREN_BIN: &[u8] =
 static LOINC_PART_NAMES_BIN: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/loinc_part_names.bin"));
 
+// These parsers only ever read build.rs's own embedded, build-time-generated
+// blobs (not user input), so a malformed blob is a build.rs bug, not a
+// runtime failure mode — panicking via unwrap() is deliberate here, matching
+// build.rs's own #![allow(clippy::expect_used, clippy::panic)] philosophy.
+#[allow(clippy::unwrap_used)]
 fn loinc_parse_descriptions(data: &'static [u8]) -> HashMap<&'static str, &'static str> {
     let mut pos = 0usize;
     let count = u32::from_le_bytes(data[pos..pos + 4].try_into().unwrap()) as usize;
@@ -498,6 +503,7 @@ fn loinc_parse_descriptions(data: &'static [u8]) -> HashMap<&'static str, &'stat
     map
 }
 
+#[allow(clippy::unwrap_used)]
 fn loinc_read_str(data: &'static [u8], pos: &mut usize) -> &'static str {
     let l = u16::from_le_bytes(data[*pos..*pos + 2].try_into().unwrap()) as usize;
     *pos += 2;
@@ -506,6 +512,7 @@ fn loinc_read_str(data: &'static [u8], pos: &mut usize) -> &'static str {
     s
 }
 
+#[allow(clippy::unwrap_used)]
 fn loinc_parse_components(
     data: &'static [u8],
 ) -> HashMap<&'static str, crate::loinc::LoincComponents> {
@@ -543,6 +550,7 @@ pub static LOINC_DESCRIPTIONS: Lazy<HashMap<&'static str, &'static str>> =
 pub static LOINC_COMPONENTS: Lazy<HashMap<&'static str, crate::loinc::LoincComponents>> =
     Lazy::new(|| loinc_parse_components(LOINC_COMPONENTS_BIN));
 
+#[allow(clippy::unwrap_used)]
 fn loinc_read_code(data: &'static [u8], pos: &mut usize) -> &'static str {
     let l = data[*pos] as usize;
     *pos += 1;
@@ -551,6 +559,7 @@ fn loinc_read_code(data: &'static [u8], pos: &mut usize) -> &'static str {
     s
 }
 
+#[allow(clippy::unwrap_used)]
 fn loinc_parse_parents(data: &'static [u8]) -> HashMap<&'static str, Option<&'static str>> {
     let mut pos = 0usize;
     let count = u32::from_le_bytes(data[pos..pos + 4].try_into().unwrap()) as usize;
@@ -570,6 +579,7 @@ fn loinc_parse_parents(data: &'static [u8]) -> HashMap<&'static str, Option<&'st
     map
 }
 
+#[allow(clippy::unwrap_used)]
 fn loinc_parse_children(data: &'static [u8]) -> HashMap<&'static str, Vec<&'static str>> {
     let mut pos = 0usize;
     let count = u32::from_le_bytes(data[pos..pos + 4].try_into().unwrap()) as usize;
@@ -752,7 +762,7 @@ fn parse_cms_xml(
                 _ => {}
             },
             Event::Text(e) => {
-                let text = e.decode()?.to_string();
+                let text = quick_xml::escape::unescape(&e.decode()?)?.to_string();
                 if in_name {
                     current_code = Some(text.to_uppercase());
                 } else if in_desc {

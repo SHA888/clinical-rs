@@ -238,16 +238,17 @@ impl CodeSystem for Loinc {
                 // guarantee (unlike ICD-10-CM's strictly-shortening codes).
                 break;
             }
+            // A missing display name only excludes this node from the result
+            // — it must not stop the climb, or every ancestor above it would
+            // be silently dropped too.
             if let Some(desc) = loinc_display_name(parent) {
                 ancestors.push(Code {
                     system: System::Loinc,
                     code: parent.to_string(),
                     description: desc.to_string(),
                 });
-                current = parent;
-            } else {
-                break;
             }
+            current = parent;
         }
 
         Ok(ancestors)
@@ -269,14 +270,17 @@ impl CodeSystem for Loinc {
             }
             if let Some(children) = LOINC_CHILDREN.get(current) {
                 for &child in children.iter() {
+                    // A missing display name only excludes this node from the
+                    // result — it must not stop the walk, or the entire
+                    // subtree below it would be silently dropped too.
                     if let Some(desc) = loinc_display_name(child) {
                         descendants.push(Code {
                             system: System::Loinc,
                             code: child.to_string(),
                             description: desc.to_string(),
                         });
-                        stack.push(child);
                     }
+                    stack.push(child);
                 }
             }
         }
